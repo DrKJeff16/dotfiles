@@ -1,12 +1,27 @@
+" vim
+" :set ft=vim
+" :set ts=4
+" :set sts=4
+" :set sw=4
+" :set noexpandtab
+" :set ff=unix
+"
+" Title: vimrc configuration file
+" Author: Guennadi Maximov C [DrKJeff16]
+" Last Update: 05/03/2022
+
 set nocompatible
 set shellslash
 set backspace=indent,eol,start
-set guifont=Source_Code_Pro:h32:cANSI:qDRAFT
-set encoding=utf-8
+set guifont=Source_Code_Pro:h32:cANSI:qDRAFt    " Set default font if using `gVim`
+set enc=utf-8
 set ff=unix
 filetype off
 
-set rtp+=~/vimfiles/bundle/Vundle.vim
+" Block: Vundle Plugin Manager
+" Description: This block details the plugins to be installed using the
+" `Vundle.vim` plugin manager
+set rtp+=~/vimfiles/bundle/Vundle.vim   " Include Vundle in the runtime path
 call vundle#begin('~/vimfiles/bundle')
 Plugin 'VundleVim/Vundle.vim'
 Plugin 'mattn/calendar-vim'
@@ -41,21 +56,22 @@ Plugin 'tpope/vim-surround'
 Plugin 'L9'
 call vundle#end()
 
+" Block: Syntax and custom configurations
 filetype plugin indent on
 syntax enable
 syntax on
-
 if syntax_on == 1
     let g:colorscheme = 'spaceduck'
 endif
 
+" Block: Vim global configurations (#1)
 set confirm
 set showcmd
 set autoread
 set wildmenu
 set wrap
 set smartcase
-set ignorecase
+"set ignorecase
 set showmatch
 set hlsearch
 set incsearch
@@ -63,6 +79,7 @@ set ruler
 set laststatus=2
 set t_Co=256
 
+" Block: Configuration for `lightline.vim` plugin
 let g:lightline = {
 \    'colorscheme': 'spaceduck',
 \    'active': {
@@ -74,27 +91,28 @@ let g:lightline = {
 \    },
 \  }
 
+" Block: Custom colorscheme configurations
 if exists('+termguicolors')
 	set termguicolors
 endif
-
 if colorscheme == 'spaceduck'
     colorscheme spaceduck
 elseif colorscheme == 'space-vim-dark'
     colorscheme space-vim-dark
 endif
-
 " Make Comments Italic
 if colors_name == 'spaceduck'
     hi Comment cterm=italic
 endif
 
-" asyncomplete.vim
+" Block: Various plugin tweaks
+" Plugin: asyncomplete.vim
+"" Insert mode mappings
 inoremap <expr> <Tab>   pumvisible() ? "\<C-n>" : "\<Tab>"
 inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
 inoremap <expr> <cr>    pumvisible() ? asyncomplete#close_popup() : "\<cr>"
 inoremap <expr> <cr> pumvisible() ? asyncomplete#close_popup() . "\<cr>" : "\<cr>"
-" Enable Auto Popup
+"" Enable Auto Popup
 let g:asyncomplete_auto_popup = 0
 function! s:check_back_space() abort
     let col = col('.') - 1
@@ -105,64 +123,63 @@ inoremap <silent><expr> <TAB>
   \    <SID>check_back_space() ? "\<TAB>" :
   \    asyncomplete#force_refresh()
 inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
-" Enable preview Window
+"" Enable preview Window
 let g:asyncomplete_auto_completeopt = 0
 set completeopt=menuone,noinsert,noselect,preview
-" Auto close preview window when completion is done
+"" Auto close preview window when completion is done
 au! CompleteDone * if pumvisible() == 0 | pclose | endif
 
-" Vim LSP
-"" PYLSP
-if executable('pylsp')
+" Plugin: vim-lsp
+"" Use `pylsp` as default LSP for Python scripts
+if executable('pylsp')      " If 'pylsp' executable exists
 	au User lsp_setup call lsp#register_server(
-        \    {
-		\        'name': 'pylsp',
-		\        'cmd': {server_info -> ['pylsp']},
-		\        'allowlist': ['python'],
-		\    }
-        \  )
+\    {
+\        'name': 'pylsp',
+\        'cmd': {server_info -> ['pylsp']},
+\        'allowlist': ['python'],
+\    }
+\  )
 endif
-
-"" asyncomplete-necovim.vim
+"" Use `asyncomplete-necovim.vim` plugin as default LSP for Vim files
 au User asyncomplete_setup call asyncomplete#register_source(
-    \    asyncomplete#sources#necovim#get_source_options(
-    \        {
-    \            'name': 'necovim',
-    \            'allowlist': ['vim'],
-    \            'completor': function('asyncomplete#sources#necovim#completor'),
-    \        }
-    \    )
-    \  )
-"" asyncomplete-clang.vim
+\    asyncomplete#sources#necovim#get_source_options(
+\        {
+\            'name': 'necovim',
+\            'allowlist': ['vim'],
+\            'completor': function('asyncomplete#sources#necovim#completor'),
+\        }
+\    )
+\  )
+"" Use `clang` as default LSP for C/C++/ObjC files
 if executable('clang')
 	au User asyncomplete_setup call asyncomplete#register_source(
-    \    asyncomplete#sources#clang#get_source_options(
-    \        {
-    \            'config': {
-    \                'clang_path': '/c/msys64/mingw64/bin/clang',
-    \            },
-    \        }
-    \    )
-    \  )
+\    asyncomplete#sources#clang#get_source_options(
+\        {
+\            'config': {
+\                'clang_path': '/c/msys64/mingw64/bin/clang',
+\            },
+\        }
+\    )
+\  )
 endif
 
-" NerdTree
-"Start NERDTree when Vim is started without file arguments.
+" Plugin: NERDTree
+"" Start NERDTree when Vim is started without file arguments.
 au StdinReadPre * let s:std_in=1
 au VimEnter * if argc() == 0 && !exists('s:std_in') | NERDTree | endif
-" Start NERDTree, unless a file or session is specified, eg. vim -S session_file.vim.
+"" Start NERDTree, unless a file or session is specified, eg. vim -S session_file.vim.
 au StdinReadPre * let s:std_in=1
 au VimEnter * if argc() == 0 && !exists('s:std_in') && v:this_session == '' | NERDTree | endif
-" Start NERDTree when Vim starts with a directory argument.
+"" Start NERDTree when Vim starts with a directory argument.
 au StdinReadPre * let s:std_in=1
 au VimEnter * if argc() == 1 && isdirectory(argv()[0]) && !exists('s:std_in') |
     \ execute 'NERDTree' argv()[0] | wincmd p | enew | execute 'cd '.argv()[0] | endif
-" Exit Vim if NERDTree is the only window remaining in the only tab.
+"" Exit Vim if NERDTree is the only window remaining in the only tab.
 au BufEnter * if tabpagenr('$') == 1 && winnr('$') == 1 && exists('b:NERDTree') && b:NERDTree.isTabTree() | quit | endif
-" If another buffer tries to replace NERDTree, put it in the other window, and bring back NERDTree.
+"" If another buffer tries to replace NERDTree, put it in the other window, and bring back NERDTree.
 au BufEnter * if bufname('#') =~ 'NERD_tree_\d\+' && bufname('%') !~ 'NERD_tree_\d\+' && winnr('$') > 1 |
     \ let buf=bufnr() | buffer# | execute "normal! \<C-W>w" | execute 'buffer'.buf | endif
-"" NerdTree-git
+" Plugin: NERDTree-git
 let g:NERDTreeGitStatusIndicatorMapCustom = {
     \ 'Modified'  :'✹',
     \ 'Staged'    :'✚',
@@ -177,7 +194,8 @@ let g:NERDTreeGitStatusIndicatorMapCustom = {
     \ }
 let g:NERDTreeGitStatusShowIgnored = 1
 let g:NERDTreeGitStatusConcealBrackets = 1
-"" NerdTree Syntax-Highlight
+
+" Plugin: NERDTree Syntax-Highlight
 let g:WebDevIconsDisableDefaultFolderSymbolColorFromNERDTreeDir = 1
 let g:WebDevIconsDisableDefaultFileSymbolColorFromNERDTreeFile = 1
 let g:NERDTreeFileExtensionHighlightFullName = 1
@@ -188,27 +206,30 @@ let g:NERDTreeExactMatchHighlightFullName = 1
 let g:NERDTreePatternMatchHighlightFullName = 1
 let g:NERDTreeHighlightCursorline = 0
 
-" Additional file associations
-au BufNewFile,BufRead *.apmrc setlocal ft=dosini
-au BufNewFile,BufRead *.spacemacs setlocal ft=lisp
-au BufNewFile,BufRead *.vimpagerrc setlocal ft=vim
+" Block: Additional file associations
+au BufNewFile,BufRead *.apmrc setlocal ft=dosini    " Treat `.apmrc` with 'dosini' syntax
+au BufNewFile,BufRead *.spacemacs setlocal ft=lisp  " Treat `.spacemacs` with 'lisp' syntax
+au BufNewFile,BufRead *.vimpagerrc,*.vimpager setlocal ft=vim  " Treat `.vimpagerrc`, `.vimpager` with 'vim' syntax
 
+" Block: Custom Mappings
 " 'f+f+1' sets file format to 'unix'
 nnoremap ff1 :set ff=unix<CR>
 " 'f+f+2' sets file format to 'dos'
 nnoremap ff2 :set ff=dos<CR>
+" 'F+E+1' sets file encoding to 'UTF-8'
 nnoremap FE1 :set fileencoding=utf-8<CR>
 
+" Block: Line-numbering configurations
 set number
 set numberwidth=4
 
-set ts=2
-set sts=2
-set sw=2
-
+" Block: Indent and Tabs global configurations
+set ts=2            " Use tabs size of 2
+set sts=2           " Use soft tabs size of 2
+set sw=2            " Use shift width size of 2
 set autoindent
 set smartindent
 set smarttab
-set noexpandtab
+set noexpandtab     " Do not use spaces as tabs unless overriden
 set nocopyindent
 set nopreserveindent
