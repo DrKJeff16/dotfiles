@@ -1,0 +1,214 @@
+set nocompatible
+set shellslash
+set backspace=indent,eol,start
+set guifont=Source_Code_Pro:h32:cANSI:qDRAFT
+set encoding=utf-8
+set ff=unix
+filetype off
+
+set rtp+=~/vimfiles/bundle/Vundle.vim
+call vundle#begin('~/vimfiles/bundle')
+Plugin 'VundleVim/Vundle.vim'
+Plugin 'mattn/calendar-vim'
+Plugin 'itchyny/lightline.vim'
+Plugin 'pineapplegiant/spaceduck'
+Plugin 'liuchengxu/space-vim-dark'
+Plugin 'lilydjwg/colorizer'
+Plugin 'inkarkat/vim-ingo-library'
+Plugin 'inkarkat/vim-SyntaxRange'
+Plugin 'rust-lang/rust.vim'
+Plugin 'kchmck/vim-coffee-script'
+Plugin 'jceb/vim-orgmode'
+Plugin 'preservim/nerdtree'
+Plugin 'ryanoasis/vim-devicons'
+Plugin 'Xuyuanp/nerdtree-git-plugin'
+Plugin 'tiagofumo/vim-nerdtree-syntax-highlight'
+Plugin 'prabirshrestha/vim-lsp'
+Plugin 'OmniSharp/omnisharp-vim'
+Plugin 'mattn/vim-lsp-settings'
+Plugin 'prabirshrestha/async.vim'
+Plugin 'prabirshrestha/asyncomplete.vim'
+Plugin 'prabirshrestha/asyncomplete-lsp.vim'
+Plugin 'Shougo/neco-vim'
+Plugin 'prabirshrestha/asyncomplete-necovim.vim'
+Plugin 'keremc/asyncomplete-clang.vim'
+Plugin 'keremc/asyncomplete-racer.vim'
+Plugin 'Townk/vim-autoclose'
+Plugin 'tpope/vim-fugitive'
+Plugin 'tpope/vim-markdown'
+Plugin 'tpope/vim-speeddating'
+Plugin 'tpope/vim-surround'
+Plugin 'L9'
+call vundle#end()
+
+filetype plugin indent on
+syntax enable
+syntax on
+
+if syntax_on == 1
+    let g:colorscheme = 'spaceduck'
+endif
+
+set confirm
+set showcmd
+set autoread
+set wildmenu
+set wrap
+set smartcase
+set ignorecase
+set showmatch
+set hlsearch
+set incsearch
+set ruler
+set laststatus=2
+set t_Co=256
+
+let g:lightline = {
+\    'colorscheme': 'spaceduck',
+\    'active': {
+\       'left': [ [ 'mode', 'paste' ],
+\                 [ 'readonly', 'filename', 'modified', 'charvaluehex' ] ]
+\    },
+\    'component': {
+\       'charvaluehex': '0x%B',
+\    },
+\  }
+
+if exists('+termguicolors')
+	set termguicolors
+endif
+
+if colorscheme == 'spaceduck'
+    colorscheme spaceduck
+elseif colorscheme == 'space-vim-dark'
+    colorscheme space-vim-dark
+endif
+
+" Make Comments Italic
+if colors_name == 'spaceduck'
+    hi Comment cterm=italic
+endif
+
+" asyncomplete.vim
+inoremap <expr> <Tab>   pumvisible() ? "\<C-n>" : "\<Tab>"
+inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
+inoremap <expr> <cr>    pumvisible() ? asyncomplete#close_popup() : "\<cr>"
+inoremap <expr> <cr> pumvisible() ? asyncomplete#close_popup() . "\<cr>" : "\<cr>"
+" Enable Auto Popup
+let g:asyncomplete_auto_popup = 0
+function! s:check_back_space() abort
+    let col = col('.') - 1
+    return !col || getline('.')[col - 1]  =~ '\s'
+endfunction
+inoremap <silent><expr> <TAB>
+  \    pumvisible() ? "\<C-n>" :
+  \    <SID>check_back_space() ? "\<TAB>" :
+  \    asyncomplete#force_refresh()
+inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
+" Enable preview Window
+let g:asyncomplete_auto_completeopt = 0
+set completeopt=menuone,noinsert,noselect,preview
+" Auto close preview window when completion is done
+au! CompleteDone * if pumvisible() == 0 | pclose | endif
+
+" Vim LSP
+"" PYLSP
+if executable('pylsp')
+	au User lsp_setup call lsp#register_server(
+        \    {
+		\        'name': 'pylsp',
+		\        'cmd': {server_info -> ['pylsp']},
+		\        'allowlist': ['python'],
+		\    }
+        \  )
+endif
+
+"" asyncomplete-necovim.vim
+au User asyncomplete_setup call asyncomplete#register_source(
+    \    asyncomplete#sources#necovim#get_source_options(
+    \        {
+    \            'name': 'necovim',
+    \            'allowlist': ['vim'],
+    \            'completor': function('asyncomplete#sources#necovim#completor'),
+    \        }
+    \    )
+    \  )
+"" asyncomplete-clang.vim
+if executable('clang')
+	au User asyncomplete_setup call asyncomplete#register_source(
+    \    asyncomplete#sources#clang#get_source_options(
+    \        {
+    \            'config': {
+    \                'clang_path': '/c/msys64/mingw64/bin/clang',
+    \            },
+    \        }
+    \    )
+    \  )
+endif
+
+" NerdTree
+"Start NERDTree when Vim is started without file arguments.
+au StdinReadPre * let s:std_in=1
+au VimEnter * if argc() == 0 && !exists('s:std_in') | NERDTree | endif
+" Start NERDTree, unless a file or session is specified, eg. vim -S session_file.vim.
+au StdinReadPre * let s:std_in=1
+au VimEnter * if argc() == 0 && !exists('s:std_in') && v:this_session == '' | NERDTree | endif
+" Start NERDTree when Vim starts with a directory argument.
+au StdinReadPre * let s:std_in=1
+au VimEnter * if argc() == 1 && isdirectory(argv()[0]) && !exists('s:std_in') |
+    \ execute 'NERDTree' argv()[0] | wincmd p | enew | execute 'cd '.argv()[0] | endif
+" Exit Vim if NERDTree is the only window remaining in the only tab.
+au BufEnter * if tabpagenr('$') == 1 && winnr('$') == 1 && exists('b:NERDTree') && b:NERDTree.isTabTree() | quit | endif
+" If another buffer tries to replace NERDTree, put it in the other window, and bring back NERDTree.
+au BufEnter * if bufname('#') =~ 'NERD_tree_\d\+' && bufname('%') !~ 'NERD_tree_\d\+' && winnr('$') > 1 |
+    \ let buf=bufnr() | buffer# | execute "normal! \<C-W>w" | execute 'buffer'.buf | endif
+"" NerdTree-git
+let g:NERDTreeGitStatusIndicatorMapCustom = {
+    \ 'Modified'  :'✹',
+    \ 'Staged'    :'✚',
+    \ 'Untracked' :'✭',
+    \ 'Renamed'   :'➜',
+    \ 'Unmerged'  :'═',
+    \ 'Deleted'   :'✖',
+    \ 'Dirty'     :'✗',
+    \ 'Ignored'   :'☒',
+    \ 'Clean'     :'✔︎',
+    \ 'Unknown'   :'?',
+    \ }
+let g:NERDTreeGitStatusShowIgnored = 1
+let g:NERDTreeGitStatusConcealBrackets = 1
+"" NerdTree Syntax-Highlight
+let g:WebDevIconsDisableDefaultFolderSymbolColorFromNERDTreeDir = 1
+let g:WebDevIconsDisableDefaultFileSymbolColorFromNERDTreeFile = 1
+let g:NERDTreeFileExtensionHighlightFullName = 1
+let g:NERDTreeExactMatchHighlightFullName = 1
+let g:NERDTreePatternMatchHighlightFullName = 1
+let g:NERDTreeFileExtensionHighlightFullName = 1
+let g:NERDTreeExactMatchHighlightFullName = 1
+let g:NERDTreePatternMatchHighlightFullName = 1
+let g:NERDTreeHighlightCursorline = 0
+
+" Additional file associations
+au BufNewFile,BufRead *.apmrc setlocal ft=dosini
+au BufNewFile,BufRead *.spacemacs setlocal ft=lisp
+au BufNewFile,BufRead *.vimpagerrc setlocal ft=vim
+
+" 'f+f+1' sets file format to 'unix'
+nnoremap ff1 :set ff=unix<CR>
+" 'f+f+2' sets file format to 'dos'
+nnoremap ff2 :set ff=dos<CR>
+nnoremap FE1 :set fileencoding=utf-8<CR>
+
+set number
+set numberwidth=4
+
+set ts=2
+set sts=2
+set sw=2
+
+set autoindent
+set smartindent
+set smarttab
+set noexpandtab
+set nocopyindent
+set nopreserveindent
