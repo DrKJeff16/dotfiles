@@ -6,8 +6,8 @@
 ## Table Of Contents
 
 <ol>
-	<li><a href="#description">Description</a></li>
 	<li>
+		<a href="#description">Description</a>
 		<ol>
 			<li><a href="#structure">Structure</a></li>
 		</ol>
