@@ -30,17 +30,25 @@ A very general structure of this repository would look as follows:
 dotfiles/
 |____ unix/
      |____ bash/
-		 |____ nano/
-		 |____ nvim/
-		 |____ README.md
-		 |____ vim/
+
+     |____ nano/
+
+     |____ nvim/
+
+     |____ README.md
+
+     |____ vim/
 		 ...
 |____ win32/
      |____ mintty/
+
      |____ msys2/
-	   |____ nano/
-		 |____ README.md
-		 |____ vim/
+
+		 |____ nano/
+
+     |____ README.md
+
+     |____ vim/
 		 ...
 |____ LICENSE
 |____ README.md
