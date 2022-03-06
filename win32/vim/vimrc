@@ -65,21 +65,27 @@ if syntax_on == 1
 endif
 
 " Block: Vim global configurations (#1)
-set confirm
-set showcmd
-set autoread
-set wildmenu
 set wrap
-set smartcase
-"set ignorecase
-set showmatch
-set hlsearch
-set incsearch
 set ruler
 set laststatus=2
-set t_Co=256
+set autoread
+set confirm
+set wildmenu
+set showcmd
+set hlsearch
+set ignorecase
+set showmatch
+set smartcase
+"set ignorecase
 
 " Block: Configuration for `lightline.vim` plugin
+if !has('gui_running')
+	set t_Co=256
+endif
+" List Of Tweaks:
+" - Use 'spaceduck' as default lightline colorscheme
+" - Create a new component called 'charvaluehex', which
+"   prints the current character in hex value
 let g:lightline = {
 \    'colorscheme': 'spaceduck',
 \    'active': {
