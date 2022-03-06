@@ -1,0 +1,5 @@
+set linenumbers
+set tabsize 2
+set autoindent
+set backupdir ~/.cache/nano
+include ~/.nano/*.nanorc
