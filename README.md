@@ -44,7 +44,7 @@ dotfiles/
 
      |____ msys2/
 
-		 |____ nano/
+     |____ nano/
 
      |____ README.md
 
