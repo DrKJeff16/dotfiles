@@ -1,0 +1,3 @@
+[submodule "win32/nano/.nano"]
+	path = win32/nano/.nano
+	url = https://github.com/scopatz/nanorc
