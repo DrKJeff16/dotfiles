@@ -16,6 +16,7 @@ set backspace=indent,eol,start
 set guifont=Source_Code_Pro:h32:cANSI:qDRAFt    " Set default font if using `gVim`
 set enc=utf-8
 set ff=unix
+set fdm=marker
 filetype off
 
 " Block: Vundle Plugin Manager
@@ -99,6 +100,8 @@ let g:lightline = {
 
 " Block: Custom colorscheme configurations
 if exists('+termguicolors')
+	let &t_8f = "\<Esc>[38;2;%lu;%lu;%lum"
+	let &t_8b = "\<Esc>[48;2;%lu;%lu;%lum"
 	set termguicolors
 endif
 if colorscheme == 'spaceduck'
@@ -117,7 +120,7 @@ endif
 inoremap <expr> <Tab>   pumvisible() ? "\<C-n>" : "\<Tab>"
 inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
 inoremap <expr> <cr>    pumvisible() ? asyncomplete#close_popup() : "\<cr>"
-inoremap <expr> <cr> pumvisible() ? asyncomplete#close_popup() . "\<cr>" : "\<cr>"
+inoremap <expr> <cr>    pumvisible() ? asyncomplete#close_popup() . "\<cr>" : "\<cr>"
 "" Enable Auto Popup
 let g:asyncomplete_auto_popup = 0
 function! s:check_back_space() abort
@@ -233,7 +236,7 @@ set numberwidth=4
 set ts=2            " Use tabs size of 2
 set sts=2           " Use soft tabs size of 2
 set sw=2            " Use shift width size of 2
-set autoindent
+set autoindent      " Use automatic indentation
 set smartindent
 set smarttab
 set noexpandtab     " Do not use spaces as tabs unless overriden
