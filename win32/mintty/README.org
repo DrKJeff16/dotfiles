@@ -3,8 +3,15 @@
 #+DATE: 18-03-2022
 #+OPTIONS: toc:2
 
+- Author: [[https://github.com/DrKJeff16][DrKJeff16]]
+- Last Updated: 18-03-2022 (~DD-MM-YYYY~ format)
+
+* Introduction
+
 Here is my ~.minttyrc~ file, and possibly other modifications for a mintty
 terminal environment.
+
+** Installation
 
 ** Colorscheme
 
