@@ -6,15 +6,17 @@
 - Author: [[https://github.com/DrKJeff16][DrKJeff16]]
 - Last Updated: 18-03-2022 (~DD-MM-YYYY~ format)
 
-* Introduction
+** Introduction
 
 Here is my ~.minttyrc~ file, and possibly other modifications for a mintty
 terminal environment.
 
-** Installation
+*** Installation
 
-** Colorscheme
+Copy the ~minttyrc~ file to your home folder (~C:\Users\your_username~ or ~%USERPROFILE%~) as ~.minttyrc~:
+
+*** Colorscheme Addendum
 
 I use a modified colorscheme,
 [[https://github.com/pineapplegiant][Spaceduck]], which you can get for your
-terminal [[https://github.com/pineapplegiant/spaceduck-terminal][here]]
+terminal [[https://github.com/pineapplegiant/spaceduck-terminal][here]].
