@@ -1,0 +1,13 @@
+#+TITLE: dotfiles/win32/mintty
+#+LANGUAGE: en
+#+DATE: 18-03-2022
+#+OPTIONS: toc:2
+
+Here is my ~.minttyrc~ file, and possibly other modifications for a mintty
+terminal environment.
+
+** Colorscheme
+
+I use a modified colorscheme,
+[[https://github.com/pineapplegiant][Spaceduck]], which you can get for your
+terminal [[https://github.com/pineapplegiant/spaceduck-terminal][here]]
