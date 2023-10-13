@@ -9,3 +9,6 @@ test/
 *.rar
 *.sig
 templates/
+
+.ropeproject/
+.mypy_cache/
