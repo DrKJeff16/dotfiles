@@ -1,0 +1,60 @@
+# Lazy Lock File
+lazy-lock.json
+
+# FALLBACK INIT (for bug reporting)
+fallback.lua
+repro.lua
+minimal_init.lua
+rtp.lua
+.repro/
+
+# Deprecated / Dropped stuff
+.deprecated/
+
+# Patching
+patches/
+.patches/
+*.patch
+*.diff
+
+# Compressed Data
+*.7z
+*.Z
+*.bz2
+*.cpio
+*.gz
+*.rar
+*.tar
+*.tbz2
+*.tgz
+*.txz
+*.xz
+*.zip
+*.zst
+
+# Compilation Artifacts
+*.o
+*.so
+*.obj
+*.out
+*.i
+*.s
+*.a
+*.as
+
+# Environment
+.env
+
+# Python LSP Server
+.mypy_cache/
+.ropeproject/
+
+# Useless Files
+*.bak
+*.list
+*.lock
+*.log
+*.new
+*.old
+*.pacnew
+*.pacsave

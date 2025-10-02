@@ -1,0 +1,20 @@
+[Trigger]
+Operation = Install
+Operation = Remove
+Type = Package
+Target = linux
+Target = linux-headers
+Target = linux-hardened
+Target = linux-hardened-headers
+Target = linux-lts
+Target = linux-lts-headers
+Target = linux-rt
+Target = linux-rt-headers
+Target = linux-zen
+Target = linux-zen-headers
+
+[Action]
+Description = Regenerate GRUB
+When = PostTransaction
+Exec = grub-mkconfig -o /boot/grub/grub.cfg
+Depends = grub
