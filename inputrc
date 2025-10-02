@@ -3,14 +3,11 @@ $include /etc/inputrc
 "\e[A": history-search-backward
 "\e[B": history-search-forward
 
+set echo-control-characters Off
 set show-all-if-ambiguous Off
-
 set colored-stats On
 set visible-stats On
 set mark-symlinked-directories On
 set colored-completion-prefix On
 set menu-complete-display-prefix On
-
-set echo-control-characters Off
-
 set enable-bracketed-paste On
