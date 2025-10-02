@@ -1,0 +1,522 @@
+#!/usr/bin/env bash
+
+OPTS=':hxXvfpc:g:s:C:B:'
+
+CLEAN=0
+CLEANED=0
+FORCE=0
+POST_HOOK=0
+VERBOSE=0
+
+error() {
+    local TXT=("$@")
+    printf "%s\n" "${TXT[@]}" >&2
+    return 0
+}
+
+_check_cmd() {
+    [[ $# -eq 0 ]] && return 127
+
+    local EC=0
+
+    while [[ $# -gt 0 ]]; do
+        ! command -v "$1" &> /dev/null && return 1
+
+        shift
+    done
+
+    return 0
+}
+
+die() {
+    local EC=0
+
+    if [[ $# -ge 1 ]] && [[ $1 =~ ^(0|-?[1-9][0-9]*)$ ]]; then
+        EC="$1"
+        shift
+    fi
+
+    if [[ $# -gt 0 ]]; then
+        local TXT=("$@")
+        if [[ $EC -eq 0 ]]; then
+            printf "%s\n" "${TXT[@]}"
+        else
+            error "${TXT[@]}"
+        fi
+    fi
+
+    exit "$EC"
+}
+
+usage() {
+    local EC=0
+    [[ "$1" =~ ^(0|-?[1-9][0-9]*)$ ]] && EC="$1"
+
+    local TXT=(
+        "build_nvim: A boring neovim build script."
+        ""
+        "  usage:   build_nvim -h"
+        "                      -X"
+        "                      [ -x ] [ -p ] [ -f ] [ -c gcc|clang|cc ] [ -g ninja|make|mingw ] [ -c [c]cmake ]"
+        "                      [ -b Release|RelWithDebInfo ] [ -s [pre|[deps_][cfg|build]|post|install] ]"
+        ""
+        "     -h                                            Prints this help message (exit code: 0)"
+        "     -X                                            Only clean the repo, then exit (exit code: 0)"
+        ""
+        "     -f                                            Skip validation for CWD, attempt to build regardless"
+        "     -x                                            Attempt to clean the repo before any operation"
+        "     -p                                            Run post-build hooks. If nvim hasn't been built then"
+        "                                                   it'll run all preceding operations"
+        ""
+        "     -s pre|[deps_]cfg|[deps_]build|post|install   Selects a single stage to run. The whole script"
+        "                                                   executes these stages in the following order:"
+        "                                                       0.1 pre: (Optional) Same as -x"
+        "                                                                This one only executes manually"
+        "                                                       1. deps_cfg: Runs pre-config hooks for dependency"
+        "                                                                    building"
+        "                                                       2. deps_build: Builds dependencies"
+        "                                                       3. cfg: Runs pre-config hooks for main build"
+        "                                                       4. build: Builds the repository"
+        "                                                       4.1. post: (Optional) same as -p"
+        "                                                       5. install: Installs to target dir"
+        "                                                   If, for example, cfg executes without ever having"
+        "                                                   called any of the previous options, it'll call the previous"
+        "                                                   one, and so on recursively."
+        ""
+        "     -c gcc|clang|cc                               Selects the compiler to use."
+        "                                                   If selected compiler is invalid or not available it'll"
+        "                                                   attempt to fallback to \`gcc\`"
+        ""
+        "     -g ninja|make|mingw                           Selects the Cmake generator to use."
+        "                                                   The supported generators are:"
+        "                                                       - ninja: The default one, requires ninja"
+        "                                                       - make:  Use GNU make"
+        "                                                       - mingw: Use \`mingw32-make\` (Windows only)"
+        ""
+        "     -C cmake|ccmake                               Select the executable for CMake."
+        "                                                   If \`ccmake\` is selected but unavailable it'll revert back to \`cmake\`"
+        ""
+        "     -B Release|RelWithDebInfo|Debug|MinSizeRel    Select the value for \`CMAKE_BUILD_TYPE\`."
+        "                                                   If passed value is not valid it'll revert to \`Release\`."
+        ""
+    )
+
+    die "$EC" "${TXT[@]}"
+}
+
+! _check_cmd 'cmake' 'git' && die 127 "Either \`cmake\` or \`git\` not found in PATH"
+
+export CC='gcc'
+export CXX='g++'
+export CFLAGS="-O2 -g -ggdb -pipe -march=znver3 -UNDEBUG -DNDEBUG -U_GNU_SOURCE -D_GNU_SOURCE -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2"
+CXXFLAGS="${CFLAGS} -U_GLIBCXX_ASSERTIONS -D_GLIBCXX_ASSERTIONS"
+export CXXFLAGS
+
+PFX="/usr/local"
+RWDI_CFLAGS="-O2 -g -ggdb ${CFLAGS}"
+REL_CFLAGS="-O3 ${CFLAGS}"
+NPROC="$(nproc)"
+GEN='Ninja'
+BTYPE='Release'
+CMAKE_EXE="cmake"
+CMAKE_ARGS_DEPS="-DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_C_FLAGS=\"${CFLAGS} ${RWDI_CFLAGS}\" -DCMAKE_C_FLAGS_RELEASE=\"${CFLAGS} ${REL_CFLAGS}\" -DCMAKE_C_FLAGS_RELWITHDEBINFO=\"${CFLAGS} ${RWDI_CFLAGS}\""
+CMAKE_ARGS="-DCMAKE_VERBOSE_MAKEFILE=ON -DENABLE_LTO=ON -DCMAKE_C_FLAGS=\"${CFLAGS} ${RWDI_CFLAGS}\" -DCMAKE_C_FLAGS_RELEASE=\"${CFLAGS} ${REL_CFLAGS}\" -DCMAKE_C_FLAGS_RELWITHDEBINFO=\"${CFLAGS} ${RWDI_CFLAGS}\" -DCMAKE_INSTALL_SYSCONFDIR=/etc -DCMAKE_INSTALL_PREFIX=\"$PFX\""
+
+MAKEFLAGS="-j${NPROC} -l$((NPROC + 1))"
+
+CMAKE_CMD_DEPS=""
+CMAKE_CMD=""
+MAKE_CMD_DEPS=""
+MAKE_CMD=""
+MAKE_CMD_INSTALL=""
+
+STAGE_SEL=0
+declare -i STAGE_N
+
+unset LUA_PATH LUA_CPATH
+
+__check_pwd() {
+    local ENV_DIRS=(
+        "cmake"
+        "cmake.deps"
+        "cmake.config"
+        "cmake.packaging"
+        "runtime"
+        "scripts"
+        "src"
+        "contrib"
+        "test"
+    )
+    local ENV_FILES=("CMakeLists.txt" "Makefile" "BSDmakefile" "CMakePresets.json")
+
+    for F in "${ENV_FILES[@]}"; do
+        if ! [[ -f ./"$F" ]]; then
+            die 127 "File \`${F}\` not found. Aborting" \
+                "If you still want to run this, run this script with the \`-f\` option"
+
+        fi
+    done
+    for D in "${ENV_DIRS[@]}"; do
+        if ! [[ -d ./"$D" ]]; then
+            die 127 "Directory \`${D}\` not found. Aborting" \
+                "If you still want to run this, run this script with the \`-f\` option"
+
+        fi
+    done
+
+    return 0
+}
+
+__select_cmake_exe() {
+    local EXE=""
+
+    if [[ -z "$1" ]]; then
+        EXE="$CMAKE_EXE"
+    else
+        EXE="$1"
+    fi
+
+    case "$EXE" in
+        [Cc][Mm][Aa][Kk][Ee]) CMAKE_EXE="cmake" ;;
+        [Cc][Cc][Mm][Aa][Kk][Ee])
+            if _check_cmd 'ccmake'; then
+                CMAKE_EXE="ccmake"
+            else
+                CMAKE_EXE="cmake"
+            fi
+            ;;
+        *) die 1 "Invalid executable \`$EXE\`" ;;
+    esac
+
+    CMAKE_CMD_DEPS="$CMAKE_EXE -G \"$GEN\" -B .deps -S cmake.deps -DCMAKE_BUILD_TYPE=\"$BTYPE\""
+    CMAKE_CMD_DEPS="${CMAKE_CMD_DEPS} ${CMAKE_ARGS_DEPS}"
+    CMAKE_CMD="$CMAKE_EXE -G \"$GEN\" -B build -DCMAKE_BUILD_TYPE=\"$BTYPE\""
+    CMAKE_CMD="${CMAKE_CMD} ${CMAKE_ARGS}"
+
+    return 0
+}
+
+__select_comp() {
+    local ARG="$1"
+
+    case "$ARG" in
+        [Cc][Cc]) export CC='cc' CXX='c++' ;;
+        [Gg][Cc][Cc]) export CC='gcc' CXX='g++' ;;
+        [Cc][Ll][Aa][Nn][Gg] | [Ll][Ll][Vv][Mm])
+            if _check_cmd 'clang' 'clang++'; then
+                export CC='clang' CXX='clang++'
+            else
+                export CC='gcc' CXX='g++'
+            fi
+            ;;
+        *) export CC='gcc' CXX='g++' ;;
+    esac
+
+    return 0
+}
+
+__select_gen() {
+    local ARG="$1"
+    local MAKEPRG=''
+
+    MAKE_CMD=""
+    MAKE_CMD_DEPS=""
+    MAKE_CMD_INSTALL=""
+
+    case "$ARG" in
+        [Nn][Ii][Nn][Jj][Aa])
+            GEN="Ninja"
+            MAKEPRG='ninja'
+            MAKE_CMD_DEPS="${MAKEPRG} ${MAKEFLAGS} -C .deps"
+            MAKE_CMD="${MAKEPRG} ${MAKEFLAGS} -C build"
+            if _check_cmd 'sudo'; then
+                MAKE_CMD_INSTALL="sudo"
+            elif _check_cmd 'doas'; then
+                MAKE_CMD_INSTALL="doas"
+            fi
+            MAKE_CMD_INSTALL="${MAKE_CMD_INSTALL} ${MAKEPRG} ${MAKEFLAGS} -C build install"
+
+            if [[ $VERBOSE -eq 1 ]]; then
+                MAKE_CMD+=" -v"
+                MAKE_CMD_DEPS+=" -v"
+                MAKE_CMD_INSTALL+=" -v"
+            fi
+            ;;
+        [Mm][Aa][Kk][Ee])
+            GEN="Unix Makefiles"
+            MAKEPRG='make'
+            MAKE_CMD_DEPS="pushd .deps &> /dev/null && ${MAKEPRG} ${MAKEFLAGS} && popd &> /dev/null"
+            MAKE_CMD="pushd build &> /dev/null && ${MAKEPRG} ${MAKEFLAGS} && popd &> /dev/null"
+            MAKE_CMD_INSTALL="pushd build &> /dev/null &&"
+            if _check_cmd 'sudo'; then
+                MAKE_CMD_INSTALL="${MAKE_CMD_INSTALL} sudo"
+            elif _check_cmd 'doas'; then
+                MAKE_CMD_INSTALL="${MAKE_CMD_INSTALL} doas"
+            fi
+            MAKE_CMD_INSTALL="${MAKE_CMD_INSTALL} ${MAKEPRG} ${MAKEFLAGS} install && popd &> /dev/null"
+            ;;
+        [Mm][Ii][Nn][Gg][Ww])
+            GEN="MINGW Makefiles"
+            MAKEPRG='mingw32-make'
+            MAKE_CMD_DEPS="pushd .deps &> /dev/null && ${MAKEPRG} ${MAKEFLAGS} && popd &> /dev/null"
+            MAKE_CMD="pushd build &> /dev/null && ${MAKEPRG} ${MAKEFLAGS} && popd &> /dev/null"
+            MAKE_CMD_INSTALL="pushd build &> /dev/null &&"
+            if _check_cmd 'sudo'; then
+                MAKE_CMD_INSTALL="${MAKE_CMD_INSTALL} sudo"
+            elif _check_cmd 'doas'; then
+                MAKE_CMD_INSTALL="${MAKE_CMD_INSTALL} doas"
+            fi
+            MAKE_CMD_INSTALL="${MAKE_CMD_INSTALL} ${MAKEPRG} ${MAKEFLAGS} install && popd &> /dev/null"
+            ;;
+        *)
+            error "\`${ARG}\` is not a valid generator. Switching to the default (Ninja)"
+            sleep 1s
+
+            GEN="Ninja"
+            MAKEPRG='ninja'
+            MAKE_CMD_DEPS="${MAKEPRG} ${MAKEFLAGS} -C .deps"
+            MAKE_CMD="${MAKEPRG} ${MAKEFLAGS} -C build"
+            if _check_cmd 'sudo'; then
+                MAKE_CMD_INSTALL="sudo"
+            elif _check_cmd 'doas'; then
+                MAKE_CMD_INSTALL="doas"
+            fi
+            MAKE_CMD_INSTALL="${MAKE_CMD_INSTALL} ${MAKEPRG} ${MAKEFLAGS} -C build install"
+
+            if [[ $VERBOSE -eq 1 ]]; then
+                MAKE_CMD+=" -v"
+                MAKE_CMD_DEPS+=" -v"
+                MAKE_CMD_INSTALL+=" -v"
+            fi
+            ;;
+    esac
+
+    if ! _check_cmd "$MAKEPRG"; then
+        die 4 "\`${MAKEPRG}\` could not be found it PATH" "Ensure it is installed"
+    fi
+
+    __select_cmake_exe
+
+    return 0
+}
+
+__select_btype() {
+    local ARG="$1"
+
+    case "$ARG" in
+        [Rr][Ee][Ll][Ee][Aa][Ss][Ee]) BTYPE='Release' ;;
+        [Rr][Ee][Ww][Ii][Tt][Hh][Dd][Ee][Bb][Ii][Nn][Ff][Oo]) BTYPE='RelWithDebInfo' ;;
+        [Dd][Ee][Bb][Uu][Gg]) BTYPE='Debug' ;;
+        [Mm][Ii][Nn][Ss][Ii][Zz][Ee][Rr][Ee][Ll]) BTYPE='MinSizeRel' ;;
+        *)
+            error "\`${ARG}\` is not a valid build type. Switching to default (Release)"
+            BTYPE='Release'
+            ;;
+    esac
+
+    [[ "${CMAKE_CMD_DEPS}" != *"-DCMAKE_BUILD_TYPE"* ]] && CMAKE_CMD_DEPS+=" -DCMAKE_BUILD_TYPE=${BTYPE}"
+    [[ "${CMAKE_CMD}" != *"-DCMAKE_BUILD_TYPE"* ]] && CMAKE_CMD+=" -DCMAKE_BUILD_TYPE=${BTYPE}"
+
+    return 0
+}
+
+__clean_repo() {
+    local EC=0 VERB=0
+
+    if [[ $CLEANED -eq 0 ]]; then
+        CLEANED=1
+    else
+        die 0
+    fi
+
+    [[ $VERBOSE -eq 1 ]] && VERB=1
+    if [[ $# -gt 0 ]] && [[ "$1" == "-v" ]]; then
+        VERB=1
+    fi
+
+    if [[ $VERB -eq 1 ]]; then
+        make -j"$(nproc)" distclean || EC=1
+    else
+        make -j"$(nproc)" distclean > /dev/null || EC=1
+    fi
+
+    git restore --staged . || EC=1
+    git restore . || EC=1
+
+    return "$EC"
+}
+
+_pre_build() {
+    __clean_repo || die 1 "Could not clean the repo tree. Aborting"
+    git pull --rebase || die 1 "Could not fetch upstream. Aborting"
+
+    return 0
+}
+
+_deps_cfg() {
+    eval "${CMAKE_CMD_DEPS}" || die 1 "Failed at the \`_deps_cfg\` stage"
+
+    return 0
+}
+
+_deps_build() {
+    ! [[ -d ./.deps ]] && _deps_cfg
+
+    eval "${MAKE_CMD_DEPS}" || die 1 "Failed at the \`_deps_build\` stage"
+    return 0
+}
+
+_cfg() {
+    ! [[ -d ./.deps ]] && _deps_build
+
+    eval "${CMAKE_CMD}" || die 1 "Failed at the \`_cfg\` stage"
+    return 0
+}
+
+_build() {
+    ! [[ -d ./build ]] && _cfg
+
+    eval "${MAKE_CMD}" || die 1 "Failed at the \`_build\` stage"
+    return 0
+}
+
+__bootstrap() {
+    if ! [[ -d ./scripts ]]; then
+        error "(__bootstrap): No \`scripts\` directory"
+        return 1
+    fi
+
+    ! [[ -d ./build ]] && _build
+
+    local PFX="./scripts"
+    local SCRIPTS=(
+        "update_terminfo.sh"
+    )
+
+    for S in "${SCRIPTS[@]}"; do
+        if [[ -f "${PFX}/${S}" ]] && [[ -x "${PFX}/${S}" ]]; then
+            "${PFX}/${S}"
+        elif ! [[ -x "${PFX}/${S}" ]]; then
+            error "\`${PFX}/${S}\` is not executable... Skipping"
+        fi
+    done
+
+    if _check_cmd 'nvim' && [[ -f "$PFX"/gen_lsp.lua ]]; then
+        nvim -l "./scripts/gen_lsp.lua" gen
+    fi
+
+    if [[ -x "$PFX/gen_eval_files.lua" ]]; then
+        "$PFX/gen_eval_files.lua" && _build
+    fi
+    return 0
+}
+
+_install() {
+    ! [[ -d ./build ]] && _build
+
+    local N=3
+
+    while [[ $N -gt 0 ]]; do
+        eval "${MAKE_CMD_INSTALL}" && break
+        N=$((N - 1))
+    done
+
+    [[ $N -eq 0 ]] && die 1 "Failed to install \`nvim\`. Aborting"
+
+    git restore --staged .
+    git restore .
+
+    CLEANED=0
+    __clean_repo
+    return 0
+}
+
+COMP_SEL_ARG="gcc"
+GEN_SEL_ARG="$GEN"
+CMAKE_SEL_ARG="cmake"
+BTYPE_SEL_ARG="Release"
+
+while getopts "$OPTS" OPTION; do
+    case "$OPTION" in
+        s)
+            STAGE_SEL=1
+            case "$OPTARG" in
+                "pre") STAGE_N=0 ;;
+                "deps_cfg") STAGE_N=1 ;;
+                "deps_build") STAGE_N=2 ;;
+                "cfg" | "config") STAGE_N=3 ;;
+                "build") STAGE_N=4 ;;
+                "post") STAGE_N=5 ;;
+                "install") STAGE_N=6 ;;
+            esac
+            ;;
+
+        # TODO: Refactor the script to accomodate this flag
+        f) FORCE=1 ;;
+        v) VERBOSE=1 ;;
+        p) POST_HOOK=1 ;;
+        x) CLEAN=1 ;;
+        c) COMP_SEL_ARG="$OPTARG" ;;
+        g) GEN_SEL_ARG="$OPTARG" ;;
+        C) CMAKE_SEL_ARG="$OPTARG" ;;
+        B) BTYPE_SEL_ARG="$OPTARG" ;;
+        X)
+            __clean_repo -v
+            __clean_repo
+            ;;
+        h) usage 0 ;;
+        :)
+            error "Option \`$OPTION\` is missing its argument"
+            usage 1
+            ;;
+        ?) usage 1 ;;
+        *) usage 1 ;;
+    esac
+done
+
+[[ $FORCE -eq 0 ]] && __check_pwd
+[[ $CLEAN -eq 1 ]] && __clean_repo
+
+__select_comp "$COMP_SEL_ARG"
+__select_gen "$GEN_SEL_ARG"
+__select_btype "$BTYPE_SEL_ARG"
+__select_cmake_exe "$CMAKE_SEL_ARG"
+
+if [[ $STAGE_SEL -eq 0 ]]; then
+    _deps_cfg || die 1
+    _deps_build || die 1
+    _cfg || die 1
+    _build || die 1
+
+    if [[ $POST_HOOK -eq 1 ]]; then
+        __bootstrap || die 1
+    fi
+
+    _install || die 1
+else
+    case "$STAGE_N" in
+        0)
+            _pre_build || die 1
+            ;;
+        1)
+            _deps_cfg || die 1
+            ;;
+        2)
+            _deps_build || die 1
+            ;;
+        3)
+            _cfg || die 1
+            ;;
+        4)
+            _build || die 1
+            ;;
+        5)
+            __bootstrap || die 1
+            ;;
+        6)
+            _install || die 1
+            ;;
+    esac
+fi
+
+die 0

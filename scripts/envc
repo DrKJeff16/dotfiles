@@ -1,0 +1,487 @@
+#!/usr/bin/env bash
+
+set -o pipefail -o errexit -o noclobber
+
+OPTIONS=":hvD:c:o:a:"
+
+TARGET_DIR="$HOME/Documents"
+! [[ -d "$TARGET_DIR" ]] && TARGET_DIR="$(pwd)"
+OUTPUT="env"
+EXT=".tar.xz"
+CMD=""
+APPENDED=()
+TARGET_USER="$USER"
+
+NEW_METHOD=""
+OVERRIDE_METHOD=0
+VERBOSE=0
+
+# shellcheck disable=SC2034
+GIT_OVERRIDES=(
+    ".bin"
+    "bat"
+    "hypr"
+    "lazygit"
+    "suckless"
+)
+
+TARGETS=(
+    "$HOME/.Xresources"
+    "$HOME/.bash_aliases"
+    "$HOME/.bash_completion"
+    "$HOME/.bash_functions"
+    "$HOME/.bash_logout"
+    "$HOME/.bash_profile"
+    "$HOME/.bashrc"
+    "$HOME/.bin"
+    "$HOME/.build/AUR/clean_xanmod"
+    "$HOME/.build/build_alacritty"
+    "$HOME/.build/build_hyprland"
+    "$HOME/.build/build_nvim"
+    "$HOME/.build/build_vim"
+    "$HOME/.build/shells/build_yash"
+    "$HOME/.build/suckless"
+    "$HOME/.cache/crontab"
+    "$HOME/.condarc"
+    "$HOME/.config/alacritty"
+    "$HOME/.config/bat"
+    "$HOME/.config/chadwm"
+    "$HOME/.config/fontconfig"
+    "$HOME/.config/foot"
+    "$HOME/.config/glava"
+    "$HOME/.config/htop"
+    "$HOME/.config/hypr"
+    "$HOME/.config/hyprmixer"
+    "$HOME/.config/kitty"
+    "$HOME/.config/lazygit"
+    "$HOME/.config/mpv"
+    "$HOME/.config/neovide"
+    "$HOME/.config/nvtop"
+    "$HOME/.config/nwg-bar"
+    "$HOME/.config/pacman"
+    "$HOME/.config/systemd"
+    "$HOME/.config/tmux"
+    "$HOME/.config/waybar"
+    "$HOME/.config/wireplumber"
+    "$HOME/.config/xsettingsd"
+    "$HOME/.config/yay"
+    "$HOME/.env.d"
+    "$HOME/.face"
+    "$HOME/.gdbinit"
+    "$HOME/.gitconfig"
+    "$HOME/.gnupg"
+    "$HOME/.gtkrc-2.0"
+    "$HOME/.gtkrc-2.0.mine"
+    "$HOME/.inputrc"
+    "$HOME/.librewolf/installs.ini"
+    "$HOME/.librewolf/librewolf.overrides.cfg"
+    "$HOME/.librewolf/profiles.ini"
+    "$HOME/.local/share/applications"
+    "$HOME/.local/share/fontconfig"
+    "$HOME/.local/share/fonts"
+    "$HOME/.local/share/man"
+    "$HOME/.local/share/wallpapers"
+    "$HOME/.luarocks/config-5.1.lua"
+    "$HOME/.luarocks/config-5.2.lua"
+    "$HOME/.luarocks/config-5.3.lua"
+    "$HOME/.luarocks/config-5.4.lua"
+    "$HOME/.luarocks/default-lua-version.lua"
+    "$HOME/.nano"
+    "$HOME/.nanorc"
+    "$HOME/.norg"
+    "$HOME/.npm_packages"
+    "$HOME/.npmrc"
+    "$HOME/.org"
+    "$HOME/.packages.list"
+    "$HOME/.packages_foreign.list"
+    "$HOME/.password-store"
+    "$HOME/.secrets"
+    "$HOME/.spacemacs"
+    "$HOME/.ssh"
+    "$HOME/.stylua.toml"
+    "$HOME/.suckless"
+    "$HOME/.termux"
+    "$HOME/.termux_authinfo"
+    "$HOME/.vimrc"
+    "$HOME/.vimwiki"
+    "$HOME/.wezterm.lua"
+    "$HOME/.xinitrc"
+    "$HOME/.xprofile"
+    "$HOME/.xserverrc"
+    "$HOME/.xsettingsd"
+    "$HOME/.yarnrc"
+    "$HOME/.yashrc"
+    "$HOME/.zprofile"
+    "$HOME/.zshrc"
+    "$HOME/Templates"
+    "$HOME/bin"
+    "/etc/.gitignore"
+    "/etc/DIR_COLORS"
+    "/etc/DIR_COLORS.dracula"
+    "/etc/X11"
+    "/etc/acpi"
+    "/etc/alsa"
+    "/etc/bash-completion"
+    "/etc/bash.bashrc"
+    "/etc/bash_completion.d"
+    "/etc/bluetooth"
+    "/etc/chrony.conf"
+    "/etc/cpufreq-bench.conf"
+    "/etc/default/cpupower"
+    "/etc/default/grub"
+    "/etc/default/ufw"
+    "/etc/default/useradd"
+    "/etc/default/xboxdrv"
+    "/etc/dhcpcd.conf"
+    "/etc/doas.conf"
+    "/etc/environment"
+    "/etc/hosts"
+    "/etc/ld.so.conf"
+    "/etc/ld.so.conf.d"
+    "/etc/locale.conf"
+    "/etc/logrotate.conf"
+    "/etc/makepkg.conf"
+    "/etc/makepkg.conf.d"
+    "/etc/man.conf"
+    "/etc/mkinitcpio.conf"
+    "/etc/mkinitcpio.conf.d"
+    "/etc/mkinitcpio.d"
+    "/etc/modprobe.d"
+    "/etc/modules-load.d"
+    "/etc/my.cnf"
+    "/etc/my.cnf.d"
+    "/etc/pacman.conf"
+    "/etc/pacman.d/hooks"
+    "/etc/plymouth"
+    "/etc/polkit-1"
+    "/etc/portage"
+    "/etc/profile"
+    "/etc/profile.d"
+    "/etc/sddm.conf"
+    "/etc/sddm.conf.d"
+    "/etc/shells"
+    "/etc/ssh"
+    "/etc/udev"
+    "/etc/wireplumber"
+)
+
+# Print args to `/dev/stderr`
+error() {
+    local TXT=("$@")
+    printf "%s\n" "${TXT[@]}" >&2
+    return 0
+}
+
+# Print args to `/dev/stdout` IF program runs on verbose mode
+verb_echo() {
+    if [[ $VERBOSE -eq 1 ]]; then
+        local TXT=("$@")
+        printf "%s\n" "${TXT[@]}"
+    fi
+
+    return 0
+}
+
+# Print args to `/dev/stderr` IF program runs on verbose mode
+verb_error() {
+    if [[ $VERBOSE -eq 1 ]]; then
+        local TXT=("$@")
+        error "${TXT[@]}"
+    fi
+
+    return 0
+}
+
+# Kill the execution. By default it exits with code `1`.
+# Usage: die [[N] [[text] [...]]]
+die() {
+    local EC=1
+
+    if [[ $# -ge 1 ]] && [[ $1 =~ ^(0|-?[1-9][0-9]*)$ ]]; then
+        EC="$1"
+        shift
+    fi
+
+    if [[ $# -ge 1 ]]; then
+        local TXT=("$@")
+        if [[ $EC -eq 0 ]]; then
+            printf "%s\n" "${TXT[@]}"
+        else
+            error "${TXT[@]}"
+        fi
+    fi
+
+    exit "$EC"
+}
+
+# Check if ALL the given programs exist in environment
+_cmd() {
+    [[ $# -eq 0 ]] && return 127
+
+    local EC=0
+
+    while [[ $# -gt 0 ]]; do
+        if ! command -v "$1" &> /dev/null; then
+            EC=1
+            break
+        fi
+
+        shift
+    done
+
+    return "$EC"
+}
+
+# TODO: Write `usage`.
+usage() {
+    local TXT=()
+    local EC=0
+
+    [[ "$1" =~ ^(0|-?[1-9][0-9]*)$ ]] && EC="$1"
+
+    TXT=(
+        "env_compress: A boring user environment backup tool"
+        ""
+        "        -h                                              Prints this message, exits successfully"
+        ""
+        "        -c [t](xz|gz|bz2)|zip|7z|rar                    Selects a compression method. If not a"
+        "                                                        valid one, aborts with error"
+        "        -a /path/to/target1[:/path/to/target2[:...]]    Appends new targets in a colon-separated"
+        "                                                        format. If any target is invalid it'll be"
+        "                                                        ignored"
+    )
+
+    die "$EC" "${TXT[@]}"
+}
+
+__in_arr() {
+    [[ $# -ne 2 ]] && return 127
+
+    local ARR="$1"
+    local VAL="$2"
+
+    for V in $(eval "printf \"%s\\n\" \"\${${ARR}[@]}\""); do
+        if [[ "$V" == "$VAL" ]]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+# Filter the `$TARGETS` array and discard duplicates
+__destroy_dups() {
+    local NEW_TGTS=()
+
+    for V in "${TARGETS[@]}"; do
+        local VALUE="$V"
+        local IS_DUP=0
+
+        if [[ ${#NEW_TGTS[@]} -eq 0 ]]; then
+            NEW_TGTS+=("$VALUE")
+            continue
+        fi
+
+        for C in "${NEW_TGTS[@]}"; do
+            if [[ "$C" == "$VALUE" ]]; then
+                verb_error "[WARN] \`$VALUE\` is duplicated! Ignoring duplicates"
+                IS_DUP=1
+                break
+            fi
+        done
+
+        [[ $IS_DUP -eq 0 ]] && NEW_TGTS+=("$VALUE")
+    done
+
+    TARGETS=("${NEW_TGTS[@]}")
+
+    return 0
+}
+
+# Check for any invalid values
+__check_discard() {
+    [[ $# -eq 0 ]] && return 127
+
+    local T="$1"
+
+    if [[ -L "$T" ]]; then
+        verb_error "[WARN] \`$T\` is a symlink! Ignoring"
+        return 1
+    fi
+
+    if ! [[ -d "$T" ]] && ! [[ -f "$T" ]]; then
+        verb_error "[WARN] \`$T\` is not a valid path| Ignoring"
+        return 1
+    fi
+
+    if ! [[ -r "$T" ]]; then
+        verb_error "[WARN] \`$T\` is not readable| Ignoring"
+        return 1
+    fi
+
+    if [[ -d "$T" ]] && ! [[ -x "$T" ]]; then
+        die 3 "[ERROR] \`$T\` is a non accessible directory!"
+    fi
+
+    verb_echo "[DEBUG] Adding \`$T\` to targets"
+
+    return 0
+}
+
+__has_git() {
+    local NEW_TGTS=()
+
+    for T in "${TARGETS[@]}"; do
+        if [[ -d "$T" ]] && [[ -n "$(find "$T" -type d -regex '^.*/.git/.*$' 2> /dev/null)" ]]; then
+            if ! __in_arr "GIT_OVERRIDES" "$(basename "$T")"; then
+                verb_error "[WARN] Directory \`$T\` has a \`.git/\` directory. Ignoring."
+                continue
+            fi
+        fi
+
+        NEW_TGTS+=("$T")
+    done
+
+    TARGETS=("${NEW_TGTS[@]}")
+
+    return 0
+}
+
+__filter() {
+    local ITEMS=()
+
+    for T in "${TARGETS[@]}"; do
+        # If target is a symlink
+        ! __check_discard "$T" && continue
+
+        if [[ -f "$T" ]] || [[ -d "$T" ]]; then
+            ITEMS+=("$T")
+        fi
+    done
+
+    TARGETS=("${ITEMS[@]}")
+
+    __destroy_dups
+    __has_git
+
+    return 0
+}
+
+method_select() {
+    [[ $# -eq 0 ]] && die 1
+
+    local MTD="$1"
+
+    case "$MTD" in
+        [Tt][Xx][Zz]|[Xx][Zz])
+            ! _cmd 'tar' 'xz' && die 127 "\`xz\` and/or \`tar\` are not installed"
+            EXT=".tar.xz"
+            CMD="tar cJvf --group=$TARGET_USER --owner=$TARGET_USER"
+            ;;
+        [Tt][Gg][Zz]|[Gg][Zz])
+            ! _cmd 'tar' 'gzip' && die 127 "\`gzip\` and/or \`tar\` are not installed"
+            EXT=".tar.gz"
+            CMD="tar czvf --group=$TARGET_USER --owner=$TARGET_USER"
+            ;;
+        [Tt][Bb][Zz]2|[Bb][Zz]2)
+            ! _cmd 'tar' 'bzip2' && die 127 "\`bzip2\` and/or \`tar\` are not installed"
+            EXT=".tar.bz2"
+            CMD="tar cjvf --group=$TARGET_USER --owner=$TARGET_USER"
+            ;;
+        [Zz][Ii][Pp])
+            ! _cmd 'zip' && die 127 "\`zip\` and/or \`tar\` are not installed"
+            EXT=".zip"
+            CMD="zip -r -9"
+            ;;
+        7[Zz]|7[Zz][Ii][Pp]|[Pp]7[Zz][Ii][Pp])
+            ! _cmd '7z' && die 127 "\`7z\` and/or \`tar\` are not installed"
+            EXT=".7z"
+            CMD="7z -mx=9 -mmt a"
+            ;;
+        :)
+            die 2 "Aborting due to missing parameter for \`$MTD\`." ;;
+        *)
+            die 127 "Method unavailable" ;;
+    esac
+
+    CMD+=" ${TARGET_DIR}/${OUTPUT}${EXT}"
+}
+
+# Verify the existance of the `Target Directory"
+__verify_dir() {
+    [[ $# -eq 0 ]] && die 127 "[ERROR] No directory to verify!"
+
+    local ARG="$1"
+
+    if [[ -d "$ARG" ]]; then
+        TARGET_DIR="$ARG"
+        return 0
+    fi
+
+    die 1 "[ERROR] Not a valid directory \`$ARG\`"
+}
+
+__append_targets() {
+    local DIR_ARR
+    local IFS
+
+    # NOTE: I love you 'https://stackoverflow.com/questions/10586153/how-to-split-a-string-into-an-array-in-bash'
+    IFS=':' read -r -a DIR_ARR <<< "$1"
+
+    for CHECK in "${DIR_ARR[@]}"; do
+        __check_discard "$CHECK" && TARGETS+=("$CHECK")
+    done
+
+    return 0
+}
+
+if [[ "$UID" == "0" ]] || [[ "$USER" == "root" ]]; then
+    die 7 "Refusing to run under root"
+fi
+
+while getopts "$OPTIONS" OPTION; do
+    case "$OPTION" in
+        c)
+            OVERRIDE_METHOD=1
+            NEW_METHOD="$OPTARG"
+            ;;
+        D) TARGET_DIR="$OPTARG" ;;
+        a) APPENDED+=("$OPTARG") ;;
+        v) VERBOSE=1 ;;
+        o) : ;;
+        h) usage 0 ;;
+        :) die 1 "No argument given to option" ;;
+        *) usage 1 ;;
+    esac
+done
+
+[[ $OVERRIDE_METHOD -eq 1 ]] && method_select "$NEW_METHOD"
+
+if [[ ${#APPENDED[@]} -ge 1 ]]; then
+    for T in "${APPENDED[@]}"; do
+        __append_targets "$T"
+    done
+fi
+
+__verify_dir "$TARGET_DIR"
+__filter
+
+TARGET="${TARGET_DIR}/${OUTPUT}${EXT}"
+
+if [[ $VERBOSE -eq 1 ]]; then
+    rm -fv "$TARGET" || die 1 "\`$TARGET\` couldn't be removed"
+    sudo tar cJvf "$TARGET" "${TARGETS[@]}" --group="$TARGET_USER" --owner="$TARGET_USER" 2> /dev/null \
+        || die 1 "[ERROR] Compression failed"
+
+else
+    rm -f "$TARGET" || die 1 "\`$TARGET\` couldn't be removed"
+    sudo tar cJf "$TARGET" "${TARGETS[@]}" --group="$TARGET_USER" --owner="$TARGET_USER" 2> /dev/null \
+        || die 1 "[ERROR] Compression failed"
+
+fi
+
+sudo chown "${TARGET_USER}:${TARGET_USER}" "$TARGET" || die 4 "[ERROR] Permission setting failed"
+
+[[ $VERBOSE -eq 1 ]] && du -h "$TARGET"
+
+die 0

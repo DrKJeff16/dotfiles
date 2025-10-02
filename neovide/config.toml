@@ -1,0 +1,26 @@
+backtraces_path = "~/.cache/neovide/neovide_backtraces.log" # see below for the default platform specific location
+fork = false
+frame = "full"
+idle = true
+maximized = true
+mouse-cursor-icon = "arrow"
+no-multigrid = false
+srgb = false
+tabs = true
+theme = "auto"
+title-hidden = false
+vsync = false
+wsl = false
+
+[font]
+normal = ["FiraCode Nerd Font Mono"] # Will use the bundled Fira Code Nerd Font by default
+size = 18
+hinting = "full"
+edging = "antialias"
+
+[box-drawing]
+# "font-glyph", "native" or "selected-native"
+mode = "font-glyph"
+
+[box-drawing.sizes]
+default = [1, 2]  # Thin and thick values respectively, for all sizes

@@ -1,0 +1,163 @@
+#
+# ~/.bashrc
+#
+
+# shellcheck shell=bash disable=SC2237,SC2016 enable=require-double-brackets
+
+# set -x
+
+set -o noclobber
+
+# STOP MESSING WITH MY `ls` OUTPUT
+unset LC_COLLATE
+
+export HISTCONTROL="erasedups:ignoreboth"
+export HISTFILESIZE=32500
+
+shopt -s histappend
+shopt -s expand_aliases
+
+[[ -d "$HOME/.build" ]] && export BUILDD="$HOME/.build"
+[[ -d "$HOME/.org" ]] && export ORGD="$HOME/.org"
+[[ -d "$HOME/.config" ]] && export CONFD="$HOME/.config"
+[[ -d "$HOME/.env.d" ]] && export ENVD="$HOME/.env.d"
+[[ -d "$HOME/Templates" ]] && export TEMPLD="$HOME/Templates"
+
+export FUNCFILE="$HOME/.bash_functions"
+
+if [[ -f "$FUNCFILE" ]] && [[ -r "$FUNCFILE" ]]; then
+    # shellcheck source=./.bash_functions
+    . "$FUNCFILE"
+fi
+
+_cmd '_create_dotlocals' && _create_dotlocals
+
+PATHS=(
+    "$HOME/.local/bin"
+    "$HOME/.bin"
+    "$HOME/.bin/cbin"
+    "$HOME/.cargo/bin"
+)
+
+for D in "${PATHS[@]}"; do
+    __append2path "$D"
+done
+unset PATHS D
+
+export ALIASFILE="$HOME/.bash_aliases"
+
+if [[ -d "$ENVD" ]]; then
+    for F in "$ENVD"/*; do
+        __cond_src "$F"
+    done
+    unset F
+fi
+
+if [[ -d "$HOME/Documents" ]]; then
+    export DOC_D="$HOME/Documents"
+fi
+
+EDITOR='nano'
+VISUAL='nano'
+
+[[ -f "$HOME/.nanorc" ]] && export NANORC="$HOME/.nanorc"
+[[ -d "$HOME/.nano" ]] && export DOT_NANO="$HOME/.nano"
+! [[ -d "$HOME/.cache/nano" ]] && mkdir -p "$HOME/.cache/nano"
+
+if _cmd 'emacs'; then
+    [[ -d "$HOME/.emacs.d" ]] && export SPC_D="$HOME/.emacs.d"
+    [[ -f "$HOME/.spacemacs" ]] && export DOT_SPC="$HOME/.spacemacs"
+
+    EDITOR='emacs'
+    VISUAL='emacs'
+fi
+if _cmd 'vim'; then
+    export VIMRC="$HOME/.vimrc"
+    [[ -d "$HOME/.vim" ]] && export DOT_VIM="$HOME/.vim"
+
+    EDITOR='vim'
+    VISUAL='vim'
+fi
+if _cmd 'nvim'; then
+    export NVIM_CFG="$CONFD/nvim"
+    export NVIM_CFG_LUA="$NVIM_CFG/lua"
+    export NVIMRC="$NVIM_CFG/init.lua"
+
+    EDITOR='nvim'
+    VISUAL='nvim'
+fi
+export EDITOR VISUAL
+
+PAGER='more'
+if _cmd 'less'; then
+    PAGER='less'
+    export LESS='-R --use-color -Dd+g$Du+r$'
+
+fi
+export PAGER
+
+if _cmd 'man'; then
+    export MANPAGER="less -R --use-color -Dd+g -Du+r" MANROFFOPT="-P -c"
+    MANPATH=""
+    [[ -d /usr/man ]] && MANPATH="/usr/man:$MANPATH"
+    [[ -d /usr/share/man ]] && MANPATH="/usr/share/man:$MANPATH"
+    [[ -d /usr/local/man ]] && MANPATH="/usr/local/man:$MANPATH"
+    [[ -d /usr/local/share/man ]] && MANPATH="/usr/local/share/man:$MANPATH"
+
+    export MANPATH
+fi
+
+SRCF=(
+    "/usr/share/bash-complete-alias/complete_alias"
+    "/usr/share/bash-completion/bash_completion"
+    "/usr/share/doc/pkgfile/command-not-found.bash"
+)
+for F in "${SRCF[@]}"; do
+    __cond_src "$F"
+done
+unset SRCF F
+
+if [[ -f "$ALIASFILE" ]] && [[ -r "$ALIASFILE" ]]; then
+    # shellcheck source=./.bash_aliases
+    . "$ALIASFILE"
+fi
+
+[[ -f "$HOME/.bash_completion" ]] && export COMPFILE="$HOME/.bash_completion"
+
+if [[ -f "$COMPFILE" ]] && [[ -r "$COMPFILE" ]]; then
+    # shellcheck source=./.bash_completion
+    . "$COMPFILE"
+fi
+
+_cmd 'dbus-launch' && export $(dbus-launch)
+
+# =================================================================================================
+
+# From here on, load the rest if in an interactive shell
+[[ $- != *i* ]] && return
+
+shopt -s checkwinsize
+
+_cmd 'filter_histfile' && filter_histfile
+
+# __append2var "XDG_CONFIG_DIRS" "$HOME/.config"
+
+# Export interactive shell dimensions
+export LINES COLUMNS
+
+case ${TERM} in
+    xterm* | rxvt* | Eterm | aterm | kterm | gnome* | st* | tmux*)
+        PROMPT_COMMAND=${PROMPT_COMMAND:+$PROMPT_COMMAND; }'printf "\033]0;%s@%s:%s\007" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/\~}"'
+        ;;
+    screen*)
+        PROMPT_COMMAND=${PROMPT_COMMAND:+$PROMPT_COMMAND; }'printf "\033_%s@%s:%s\033\\" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/\~}"'
+        ;;
+esac
+
+export HISTSIZE=32500
+
+GPG_TTY="$(tty)"
+export GPG_TTY
+gpg-connect-agent updatestartuptty /bye > /dev/null
+
+# set +x

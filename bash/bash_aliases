@@ -1,0 +1,484 @@
+#
+# ~/.bash_aliases
+#
+
+# shellcheck shell=bash disable=SC2237,SC2016,SC2236,2154 enable=require-double-brackets
+
+shopt -s progcomp_alias
+
+if [[ "$(whoami)" != "root" ]] && [[ $UID -ne 0 ]]; then
+    if _cmd 'sudo'; then
+        __simple_alias \
+            sudo 'sudo ' \
+            doas 'doas ' \
+            visudo 'sudo EDITOR="$EDITOR" visudo'
+
+    elif _cmd 'doas'; then
+        # opendoas, from BSD. It comes second as it's used as backup for sudo.
+        __simple_alias \
+            doas 'doas ' \
+            sudo 'doas '
+
+    else
+        __simple_alias \
+            doas ': ; ' \
+            sudo ': ; '
+
+    fi
+
+    __cmd_alias_complete_alias \
+        'fstrim' fstrim 'sudo fstrim' \
+        'cpupower' cpupower 'sudo cpupower'
+
+    __cmd_alias \
+        'e4defrag' e4defrag 'sudo e4defrag' \
+        'poweroff' poweroff 'sudo poweroff'
+
+    __cmd_alias_no_complete \
+        'reboot' reboot 'sudo reboot' \
+        'shutdown' Off 'sudo shutdown -h now'
+
+    __alias_complete_alias \
+        smkdir 'sudo mkdir -v' \
+        smv 'sudo mv -v' \
+        srm 'sudo rm -v' \
+        srmdir 'sudo rmdir -v' \
+        stee 'sudo tee'
+
+    if _cmd 'pacman'; then
+        __cmd_alias \
+            'pacman' pacman 'sudo pacman' \
+            'pacman-key' pacman-key 'sudo pacman-key' \
+            'pacman-mirrors' pacman-mirrors 'sudo pacman-mirrors' \
+            'reflector' reflector 'sudo reflector'
+
+        __cmd_alias_no_complete \
+            'reflector' upd_mirrors 'reflector -c US --latest 16 --protocol https -a 6 --sort rate --save /etc/pacman.d/mirrorlist'
+
+        if ! _cmd 'bak_pkgs'; then
+            __alias_no_complete \
+                bak_pkgs 'pacman -Q | cut -d " " -f1 >| ~/.packages.list'
+
+        fi
+
+        __cmd_alias_complete_alias \
+            'archlinux-java' archlinux-java 'sudo archlinux-java' \
+            'pkgfile' upd_pkgfile 'sudo pkgfile -u'
+
+    fi
+
+    __cmd_alias \
+        'emerge' emerge 'sudo emerge' \
+        'emerge-webrsync' emerge-webrsync 'sudo emerge-webrsync'
+
+    if _cmd 'apt'; then
+        __simple_alias \
+            apt 'sudo apt' \
+            apt-get 'sudo apt-get'
+
+        if _cmd 'apt-fast'; then
+            __alias_complete_alias \
+                apt 'apt-fast' \
+                apt-fast 'sudo apt-fast' \
+                apt-get 'apt-fast'
+
+        fi
+    fi
+
+    if _cmd 'systemctl'; then
+        __alias_complete_alias \
+            srv 'sudo systemctl' \
+            srv_Halt 'sudo systemctl stop --now' \
+            srv_Off 'sudo systemctl disable --now' \
+            srv_On 'sudo systemctl enable --now' \
+            srv_Reload 'sudo systemctl reload --now' \
+            srv_Restart 'sudo systemctl restart --now' \
+            srv_Run 'sudo systemctl start --now' \
+            srv_dreload 'sudo systemctl daemon-reload' \
+            srv_halt 'sudo systemctl stop' \
+            srv_help 'sudo systemctl help' \
+            srv_off 'sudo systemctl disable' \
+            srv_on 'sudo systemctl enable' \
+            srv_restart 'sudo systemctl restart' \
+            srv_run 'sudo systemctl start' \
+            srv_status 'sudo systemctl status'
+
+    fi
+
+    __cmd_alias \
+        'depmod' depmod 'sudo depmod' \
+        'dpkg' sdpkg 'sudo dpkg' \
+        'etckeeper' etckeeper 'sudo etckeeper' \
+        'gpasswd' gpasswd 'sudo gpasswd' \
+        'grub-mkconfig' grub-mkconfig 'sudo grub-mkconfig' \
+        'insmod' insmod 'sudo insmod' \
+        'mkinitcpio' mkinitcpio 'sudo mkinitcpio' \
+        'modprobe' modprobe 'sudo modprobe' \
+        'resolvconf' resolvconf 'sudo resolvconf' \
+        'rmmod' rmmod 'sudo rmmod' \
+        'swapoff' swapoff 'sudo swapoff' \
+        'swapon' swapon 'sudo swapon' \
+        'ufw' ufw 'sudo ufw'
+
+    __cmd_alias_complete_alias \
+        'makewhatis' mkman 'sudo makewhatis -Q -T utf8' \
+        'nano' snano 'sudo nano' \
+        'nmap' nmap 'sudo nmap' \
+        'nvim' snvim 'sudo \nvim' \
+        'vim' svim 'sudo \vim'
+
+else
+    if _cmd 'systemctl'; then
+        __alias_complete_alias \
+            srv 'systemctl' \
+            srv_Halt 'systemctl stop --now' \
+            srv_Off 'systemctl disable --now' \
+            srv_On 'systemctl enable --now' \
+            srv_Reload 'systemctl reload --now' \
+            srv_Restart 'systemctl restart --now' \
+            srv_Run 'systemctl start --now' \
+            srv_dreload 'systemctl daemon-reload' \
+            srv_halt 'systemctl stop' \
+            srv_help 'systemctl help' \
+            srv_off 'systemctl disable' \
+            srv_on 'systemctl enable' \
+            srv_restart 'systemctl restart' \
+            srv_run 'systemctl start' \
+            srv_status 'systemctl status'
+
+    fi
+fi
+
+__cmd_alias \
+    'grub-mkconfig' update-grub 'grub-mkconfig -o /boot/grub/grub.cfg' \
+    'mimeopen' mimeopen 'mimeopen -d' \
+    'neovide' nvide 'neovide'
+
+# No need to invoke `_complete_alias` for these aliases
+__simple_alias \
+    chgrp 'chgrp -cv --preserve-root' \
+    chmod 'chmod -cv --preserve-root' \
+    chown 'chown -cv --preserve-root' \
+    cp 'cp -rv' \
+    diff 'diff --color=auto' \
+    du 'du --max-depth=0' \
+    grep 'grep --colour=auto' \
+    ip 'ip --color=auto' \
+    ln 'ln -v' \
+    ls 'ls --hyperlink --color=auto' \
+    mkdir 'mkdir -pv' \
+    mount 'mount -v' \
+    mv 'mv -v' \
+    rm 'rm -v' \
+    rmdir 'rmdir -v' \
+    umount 'umount -v'
+
+__cmd_alias_no_complete \
+    'shutdown' off 'shutdown -h now'
+
+__alias_complete_alias \
+    egrep 'grep -E' \
+    fgrep 'grep -F' \
+    l 'ls -Al1' \
+    la 'ls -A' \
+    lal 'ls -Alg1' \
+    lalh 'ls -Alg1h' \
+    lhg 'ls -Alg1h'
+
+__alias_no_complete \
+    cr 'clear' \
+    crh 'hdel; cr' \
+    edals '"$EDITOR" "$ALIASFILE"' \
+    edcomp '"$EDITOR" "$COMPFILE"' \
+    edfc '"$EDITOR" "$FUNCFILE"' \
+    goenv 'pd "$ENVD"' \
+    hdel 'history -c; echo -n >| "$HISTFILE"' \
+    nwenv '"$EDITOR" "$HOME/.bashrc" +"cd $HOME"' \
+    ppd 'popd 2> /dev/null && ls -A' \
+    qt 'exit 0' \
+    qth 'hdel; qt' \
+    rtrm '. "$HOME/.bash_profile"'
+
+! [[ -z ${VIMRC+X} ]] \
+    && __alias_no_complete vimrc 'vim "$VIMRC" +"cd $HOME"'
+
+! [[ -z ${TMUX_CFG+X} ]] \
+    && __alias_no_complete edtmux '"$EDITOR" "$TMUX_CFG"'
+
+! [[ -z ${NVIM_CFG+X} ]] \
+    && __alias_no_complete gonvim_cfg '[[ "$(pwd)" != "${NVIM_CFG}*" ]] && pd "$NVIM_CFG"'
+
+! [[ -z ${NVIM_CFG_LUA+X} ]] \
+    && __alias_no_complete nvim_lua 'pd "$NVIM_CFG_LUA"'
+
+! [[ -z ${NVIMRC+X} ]] \
+    && __alias_no_complete nvimrc 'nvim "$NVIMRC" +"cd $NVIM_CFG"'
+
+! [[ -z ${NANORC+X} ]] \
+    && __alias_no_complete nanorc 'nano "$NANORC"'
+
+if _cmd 'lsd'; then
+    __alias_complete_alias \
+        tree 'lsd --tree'
+
+elif _cmd 'tree'; then
+    __alias_complete_alias \
+        tree 'tree -C'
+
+fi
+
+if [[ -d "$CONFD" ]] && ! _cmd 'gocfg'; then
+    __alias_no_complete \
+        gocfg 'pd "$CONFD"'
+
+fi
+
+[[ -d "$HOME/.bin" ]] \
+    && __alias_no_complete goals 'pd "$HOME/.bin"'
+
+[[ -d "$HOME/.bin/cbin/.source" ]] \
+    && __alias_no_complete go2c 'pd "$HOME/.bin/cbin/.source"'
+
+__cmd_alias \
+    'batman' man 'batman' \
+    'delta' delta "delta --hyperlinks --hyperlinks-file-link-format='file://{path}#{line}'" \
+    'ffmpeg' ffmpeg 'ffmpeg -hide_banner' \
+    'ffprobe' ffprobe 'ffprobe -hide_banner' \
+    'lsd' lsd 'lsd --color=auto -h' \
+    'luacheck' luacheck 'luacheck -q --codes' \
+    'rg' rg 'rg --hyperlink-format=kitty' \
+    'yt-dlp' yt-dlp 'yt-dlp --prefer-free-formats --prefer-ffmpeg'
+
+if _cmd 'python3'; then
+    __simple_alias \
+        python3 'python3 -q ' \
+        python 'python3 '
+
+    _cmd '__pip_alias' && __pip_alias
+elif _cmd 'python'; then
+    __simple_alias python 'python -q '
+    __alias_complete_alias python3 'python '
+
+    _cmd '__pip_alias' && __pip_alias
+fi
+
+[[ -d "$HOME/Music/.FLAC" ]] \
+    && __alias_no_complete goflac 'pd "$HOME/Music/.FLAC"'
+
+[[ -d "$HOME/Videos/.DL" ]] \
+    && __alias_no_complete govid 'pd "$HOME/Videos/.DL"'
+
+__cmd_alias_complete_alias \
+    'flatpak' upd_flatpak 'flatpak update' \
+    'make' make 'make -j"$(nproc)" -l"$(nproc)"' \
+    'make' mkc 'make clean' \
+    'make' mkdc 'make distclean' \
+    'npm' upd_npm 'npm update -g'
+
+! [[ -z ${ORGD+X} ]] && __alias_no_complete goorg 'pd "$ORGD"'
+
+if ! [[ -z ${PROJ_D+X} ]] && ! _cmd 'goproj'; then
+    __alias_no_complete \
+        goproj 'pd "$PROJ_D"'
+
+fi
+
+if ! [[ -z ${DOC_D+X} ]] && ! _cmd 'godocs'; then
+    __alias_no_complete \
+        godocs 'pd "$DOC_D"'
+
+fi
+
+if [[ -d "$HOME/Downloads" ]] && ! _cmd 'godwd'; then
+    __alias_no_complete\
+        godwd 'pd "$HOME/Downloads"'
+
+fi
+
+if _cmd 'git'; then
+    __alias_no_complete gitconfig '"$EDITOR" "$HOME/.gitconfig" +"cd $HOME"'
+
+    __alias_complete_alias \
+        gclone 'git clone --recurse-submodules' \
+        gitA 'git apply' \
+        gitA3 'git apply -3' \
+        gita 'git add' \
+        gitap 'git add -p' \
+        gitbr 'git branch' \
+        gitc 'git commit --signoff' \
+        gitcfg 'git config' \
+        gitcfg_g 'git config --global' \
+        gitcfg_l 'git config --local' \
+        gitchp 'git cherry-pick' \
+        gitck 'git checkout' \
+        gitcm 'git commit -m' \
+        gitd 'git diff' \
+        gitds 'git diff --staged' \
+        gitf 'git fetch' \
+        gitl 'git log' \
+        gitlo 'git log --oneline --decorate --graph' \
+        gitlp 'git log -p' \
+        gitm 'git merge' \
+        gitr 'git restore' \
+        gitrb 'git rebase' \
+        gitrbi 'git rebase -i' \
+        gitre 'git reset' \
+        gitreh 'git reset --hard' \
+        gitres 'git reset --soft' \
+        gitrs 'git restore --staged' \
+        gits 'git status' \
+        gitst 'git stage' \
+        gitt 'git tag' \
+        gitta 'git tag -a' \
+        gittas 'git tag -s -a' \
+        gpull 'git pull --recurse-submodules --rebase' \
+        gpush 'git push' \
+        gpushf 'git push --force' \
+        gpushft 'git push --force --tags' \
+        gpusht 'git push --tags' \
+        gsh 'git stash' \
+        gshc 'git stash clear' \
+        gshp 'git stash pop'
+
+    ! [[ -z ${LAZYGIT_CFG+X} ]] && __alias_no_complete edlazygit '"$EDITOR" "$LAZYGIT_CFG"'
+fi
+
+if _cmd 'systemctl' && [[ "$USER" != "root" ]] && [[ $UID -ne 0 ]]; then
+    __alias_no_complete susp 'systemctl suspend'
+
+    __alias_complete_alias \
+        usrv 'systemctl --user' \
+        usrv_Halt 'systemctl --user stop --now' \
+        usrv_Off 'systemctl --user disable --now' \
+        usrv_On 'systemctl --user enable --now' \
+        usrv_Reload 'systemctl --user reload --now' \
+        usrv_Restart 'systemctl --user restart --now' \
+        usrv_Run 'systemctl --user start --now' \
+        usrv_halt 'systemctl --user stop' \
+        usrv_off 'systemctl --user disable' \
+        usrv_on 'systemctl --user enable' \
+        usrv_reload 'systemctl --user reload' \
+        usrv_restart 'systemctl --user restart' \
+        usrv_run 'systemctl --user start ' \
+        usrv_status 'systemctl --user status'
+
+fi
+
+if ! [[ -z ${NPMRC+X} ]]; then
+    __alias_no_complete \
+        npmrc '"$EDITOR" "$NPMRC"'
+
+fi
+
+if ! [[ -z ${WAYBAR_CFG+X} ]] && ! [[ -z ${WAYBARRC+X} ]]; then
+    __alias_no_complete \
+        edwaybar '"$EDITOR" "$WAYBARRC" +"cd $WAYBAR_CFG"' \
+        gowaybar 'pd "$WAYBAR_CFG"'
+
+fi
+
+if ! [[ -z ${HYPR_CFG+X} ]] && ! [[ -z ${HYPRLANDRC+X} ]]; then
+    __alias_no_complete \
+        edhypr '"$EDITOR" "$HYPR_CFG" +"cd $HYPR_CFG"' \
+        edhyprcfg '"$EDITOR" "$HYPRLANDRC" +"cd $HYPR_CFG"' \
+        gohypr 'pd "$HYPR_CFG"'
+
+    ! [[ -z ${HYPRLOCKRC+X} ]] \
+        && __alias_no_complete edhyprlock '"$EDITOR" "$HYPRLOCKRC" +"cd $HYPR_CFG"'
+
+    ! [[ -z ${HYPRIDLERC+X} ]] \
+        && __alias_no_complete edhypridle '"$EDITOR" "$HYPRIDLERC" +"cd $HYPR_CFG"'
+
+    ! [[ -z ${HYPRXDPHRC+X} ]] \
+        && __alias_no_complete edhyprxdph '"$EDITOR" "$HYPRXDPHRC" +"cd $HYPR_CFG"'
+
+    ! [[ -z ${HYPRGAMEMODE+X} ]] \
+        && __alias_no_complete edhyprgamemode '"$EDITOR" "$HYPRGAMEMODE" +"cd $HYPR_CFG"'
+
+fi
+
+if ! [[ -z ${FOOT_CFG+X} ]] && ! [[ -z ${FOOTRC+X} ]]; then
+    __alias_no_complete \
+        edfoot '"$EDITOR" "$FOOTRC" +"cd $FOOT_CFG"' \
+        gofoot 'pd "$FOOT_CFG"'
+
+fi
+if ! [[ -z ${KITTY_CFG+X} ]] && ! [[ -z ${KITTYRC+X} ]]; then
+    __alias_no_complete \
+        edkitty '"$EDITOR" "$KITTYRC" +"cd $KITTY_CFG"' \
+        gokitty 'pd "$KITTY_CFG"'
+
+fi
+
+if ! [[ -z ${ALACRITTY_CFG+X} ]] && ! [[ -z ${ALACRITTYRC+X} ]]; then
+    __alias_no_complete \
+        edalacritty '"$EDITOR" "$ALACRITTYRC" +"cd $ALACRITTY_CFG"' \
+        goalacritty 'pd "$ALACRITTY_CFG"'
+
+fi
+
+! [[ -z ${WEZTERM_D+X} ]] \
+    && __alias_no_complete gowezterm 'pd "$WEZTERM_D"'
+
+! [[ -z ${WEZTERMRC+X} ]] \
+    && __alias_no_complete edwezterm '"$EDITOR" "$WEZTERMRC"'
+
+! [[ -z ${TEMPLD+X} ]] \
+    && __alias_no_complete gotmpl 'pd "$TEMPLD"'
+
+if [[ -f "$HOME/.config/clangd/config.yaml" ]]; then
+    __alias_no_complete \
+        edclangd '"$EDITOR" "$HOME/.config/clangd/config.yaml"'
+
+elif [[ -f "$HOME/.config/clangd/config.yml" ]]; then
+    __alias_no_complete \
+        edclangd '"$EDITOR" "$HOME/.config/clangd/config.yml"'
+
+fi
+
+! [[ -z $STEAM_DIR ]] \
+    && __alias_no_complete gosteam 'pd "$STEAM_DIR"'
+
+if _cmd 'vscodium'; then
+    __simple_alias \
+        code 'vscodium '
+
+    export CODIUMRC="$HOME/.config/VSCodium/User/settings.json"
+
+    if _file_readable_writeable "$CODIUMRC"; then
+        __alias_no_complete edcodium 'vscodium "$CODIUMRC"'
+    else
+        unset CODIUMRC
+    fi
+fi
+
+if _cmd 'prime-run'; then
+    __simple_alias \
+        prime-run 'prime-run '
+
+    __cmd_alias 'hyprland' hyprland 'prime-run hyprland'
+
+    __cmd_alias_complete_alias \
+        'neovide' neovide 'prime-run neovide' \
+        'spotify' spotify 'prime-run spotify'
+
+fi
+
+if _cmd 'winetricks'; then
+    __alias_complete_alias \
+        winetricks 'winetricks --optout'
+
+    __cmd_alias_complete_alias \
+        'zenity' winetricks 'winetricks --gui=zenity --optout'
+
+fi
+
+if _cmd '__wezterm_set_user_var' '_run_prog'; then
+    __cmd_alias \
+        'nvim' nvim '_run_prog nvim' \
+        'tmux' tmux '_run_prog tmux' \
+        'vim' vim '_run_prog vim'
+
+fi
+
+# vim:ft=sh:ts=4:sts=4:sw=4:et:ai:si:sta:noci:nopi:

@@ -1,0 +1,221 @@
+#!/usr/bin/env python3
+"""Filter bash histfile."""
+
+import argparse as ap
+import sys
+from os import environ
+from os.path import expanduser, expandvars, isfile, realpath
+from sys import exit as Exit
+from sys import stderr as STDERR
+from sys import stdout as STDOUT
+from typing import Any, Dict, NoReturn, Optional, TextIO, Tuple, Union
+
+MAXSIZE = int(environ.get("HISTFILESIZE", "8000"))
+VERBOSE = False
+
+
+def error(
+    *msg: object, end: str = "\n", sep: str = " ", flush: bool = False
+) -> NoReturn:
+    """Print msg to STDERR."""
+    if not msg:
+        return
+
+    if end is not str:
+        end = "\n"
+
+    if sep is not str:
+        sep = " "
+
+    if flush is not bool:
+        flush = False
+
+    print(*msg, end=end, sep=sep, flush=flush, file=STDERR)
+
+
+def die(code: int = 0, *msg, **kwargs) -> NoReturn:
+    """Kill the program with a given code, and print a message if given."""
+    try:
+        code = int(code)
+    except Exception:
+        code = 1
+
+    if msg:
+        end = kwargs.get("end", "\n")
+        sep = kwargs.get("sep", " ")
+        flush = kwargs.get("flush", False)
+        file = STDOUT if code == 0 else STDERR
+
+        print(*msg, end=end, sep=sep, flush=flush, file=file)
+
+    Exit(code)
+
+
+def verb_print(*data: object, **kwargs) -> NoReturn:
+    """Print if verbose is turned on"""
+    if not (VERBOSE and data):
+        return
+
+    end = kwargs.get("end", "\n")
+    sep = kwargs.get("sep", " ")
+    file = kwargs.get("file", STDOUT)
+    flush = kwargs.get("flush", False)
+
+    print(*data, end=end, sep=sep, file=file, flush=flush)
+
+
+def get_histfile_path(p: str = "") -> str:
+    """Retrieve histfile path.
+
+    Parameters
+    ----------
+    p : str, default=""
+        Path to histfile
+
+    Returns
+    -------
+    str
+    """
+    p = p.strip(" ").strip("\n") if p is str else ""
+
+    if p != "":
+        p = realpath(expanduser(p) if (p[0] == "~" or "$" in p) else p)
+    elif "HISTFILE" in environ.keys():
+        p = realpath(environ["HISTFILE"])
+    else:
+        p = realpath(expandvars("$HOME") + "/.bash_history")
+
+    if isfile(p):
+        return p
+
+    raise FileNotFoundError
+
+
+def line_strip(data: str) -> str:
+    """Strip data string"""
+    if data is not str:
+        try:
+            data = str(data)
+        except Exception:
+            raise TypeError("(filter_histfile - line_strip): data unavailable!")
+
+    return data.rstrip("\n").strip(" ").rstrip("/")
+
+
+def filter(f: TextIO) -> str:
+    """Filter histfile"""
+    if not f.readable():
+        raise ValueError("(filter_histfile - filter): file not readable!")
+
+    buffer = list()
+
+    data = line_strip(f.readline())
+    while data != "":
+        buffer.append(data)
+        data = line_strip(f.readline())
+
+    buffer.reverse()
+    new_buffer = list()
+
+    # Remove duplicates
+    for v in buffer:
+        if v not in new_buffer:
+            new_buffer.append(v)
+
+    del buffer
+    new_buffer.reverse()
+
+    for i, v in enumerate(new_buffer):
+        if v in ("\n", "") or len(v) <= 1:
+            new_buffer.pop(i)
+        elif v[-1] != "\n":
+            new_buffer[i] += "\n"
+
+    # Keep lines up to a certain max
+    if len(new_buffer) > MAXSIZE:
+        new_buffer = new_buffer.copy()[-MAXSIZE:]
+
+    res = "".join(new_buffer)
+
+    if res[-1] != "\n":
+        res += "\n"
+
+    verb_print(res)
+
+    return res
+
+
+def gen_args(P: ap.ArgumentParser,
+             A: Tuple[Tuple[str]],
+             D: Tuple[Dict[str, Any]]) -> ap.Namespace:
+    """Generate argparse arguments from special dict."""
+    if not (P and A and D):
+        raise AssertionError("(filter_histfile - gen_args): Bad arguments!")
+
+    for arg, dest in zip(A, D):
+        P.add_argument(*arg, **dest)
+
+    return P.parse_args()
+
+
+def main() -> int:
+    """Execute main workflow"""
+    global VERBOSE
+    code = 0
+
+    prog = "filter_histfile"
+    prog_desc = "Filter histfile and get rid of duplicates"
+
+    Parser = ap.ArgumentParser(prog, description=prog_desc)
+
+    dests = (
+        ("-v", "--verbose"),
+        ("-f", "--file"),
+    )
+    kwargs = (
+        {
+            "action": "store_true",
+            "help": "Verbose mode",
+            "dest": "verbose",
+            "required": False,
+        },
+        {
+            "help": "Absolute path to histfile",
+            "dest": "fpath",
+            "default": "",
+            "nargs": 1,
+        },
+    )
+
+    args = gen_args(Parser, dests, kwargs)
+
+    VERBOSE = args.verbose
+
+    if args.fpath is not str:
+        args.fpath = str(args.fpath)
+
+    try:
+        fpath = get_histfile_path(args.fpath)
+        with open(fpath, "r") as HISTFILE:
+            verb_print(f"Opened histfile `{fpath}`")
+
+            new_data = filter(HISTFILE)
+
+        if new_data != "":
+            with open(fpath, "w") as HISTFILE:
+                HISTFILE.write(new_data)
+
+    except ValueError:
+        code = 4
+    except FileNotFoundError:
+        code = 127
+    except KeyboardInterrupt:
+        code = 2
+    except Exception:
+        code = 1
+
+    return code
+
+
+if __name__ == "__main__":
+    Exit(main())

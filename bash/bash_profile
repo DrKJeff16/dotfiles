@@ -1,0 +1,7 @@
+#
+# ~/.bash_profile
+#
+
+[[ "$XDG_SESSION_TYPE" = "wayland" ]] && export MOZ_ENABLE_WAYLAND=1
+
+[[ -f ~/.bashrc ]] && . ~/.bashrc

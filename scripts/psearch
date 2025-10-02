@@ -1,0 +1,253 @@
+#!/usr/bin/env bash
+
+# shellcheck disable=SC2207
+
+OPTIONS=":hLim:q:"
+MANAGER="pacman"
+ITMPFILE="$(mktemp "/tmp/psearch.$(date +%Y%m%d.%H%M%S).XXXX" --suffix=.in.log)"
+OTMPFILE="$(mktemp "/tmp/psearch.$(date +%Y%m%d.%H%M%S).XXXX" --suffix=.out.log)"
+MGR_START_RE=(
+    "^core/.*"
+    "^extra/.*"
+    "^multilib/.*"
+)
+MGR_EXCLUDE_RE=("\[installed.*\]")
+VALIDATED=0
+QUERY=()
+USE_PAGER=0
+DEFAULT_PAGER=""
+
+error() {
+    local TXT=("$@")
+    printf "%s\n" "${TXT[@]}" >&2
+    return 0
+}
+
+die() {
+    local EC=1
+
+    if [[ $# -ge 1 ]] && [[ $1 =~ ^-?[1-9]*[0-9]$ ]]; then
+        EC="$1"
+        shift
+    fi
+
+    if [[ $# -gt 0 ]]; then
+        local TXT=("$@")
+        if [[ $EC -eq 0 ]]; then
+            printf "%s\n" "${TXT[@]}"
+        else
+            error "${TXT[@]}"
+        fi
+    fi
+
+    [[ -f "$ITMPFILE" ]] && command rm "$ITMPFILE"
+    [[ -f "$OTMPFILE" ]] && command rm "$OTMPFILE"
+
+    exit "$EC"
+}
+
+_cmd() {
+    [[ $# -eq 0 ]] && return 127
+
+    while [[ $# -gt 0 ]]; do
+        ! command -v "$1" &> /dev/null && return 1
+
+        shift
+    done
+
+    return 0
+}
+
+__select_pager() {
+    local EC=1
+    for PGR in bat most vimpager less more; do
+        if _cmd "$PGR"; then
+            DEFAULT_PAGER="$PGR"
+            EC=0
+            break
+        fi
+    done
+
+    return "$EC"
+}
+
+# Print script usage
+usage() {
+    local TXT=()
+    local EC=0
+
+    TXT=(
+        "psearch: A filtered search tool for pacman and other yogurts"
+        ""
+        "    -h                             Print this help message (STDOUT) and exit with 0"
+        "    -L                             Disable the use of paging (\`less\` is default)"
+        "                                   (support for alternative pagers is pending)"
+        ""
+        "    -m pacman|yay|paru             Select the command to be queried (pacman is default)"
+        ""
+        "    -q <query>                     Add to query list the following argument"
+        "                                   Query list can be appended to if using this option multiple times"
+        ""
+        "    -i                             Search for installed packages instead"
+    )
+
+    [[ $# -gt 0 ]] && EC=1
+
+    die 0 "${TXT[@]}"
+}
+
+_valid_mgr() {
+    if [[ $# -ge 1 ]]; then
+        local CHOICE="$1"
+
+        case "$CHOICE" in
+            [Pp][Aa][Cc][Mm][Aa][Nn])
+                MANAGER="pacman"
+                MGR_START_RE=(
+                    "^core/.*"
+                    "^extra/.*"
+                    "^multilib/.*"
+                )
+                MGR_EXCLUDE_RE=(
+                    "\[installed.*\]"
+                )
+
+                return 0
+                ;;
+
+            [Yy][Aa][Yy])
+                MANAGER="yay"
+                MGR_START_RE=(
+                    "^[Aa][Uu][Rr]/.*"
+                )
+                MGR_EXCLUDE_RE=(
+                    "\(Installed.*\)"
+                    "\(Orphaned.*\)"
+                    "\(Out-of.*\)"
+                )
+
+                ! _cmd "$MANAGER" && die 1 "\`$MANAGER\` is not a command"
+                ;;
+
+            [Pp][Aa][Rr][Uu])
+                MANAGER="paru"
+                MGR_START_RE=(
+                    "^[Aa][Uu][Rr]/.*"
+                )
+                MGR_EXCLUDE_RE=(
+                    "\[Installed.*\]"
+                    "\[Orphaned.*\]"
+                    "\[Out-of.*\]"
+                )
+
+                ! _cmd "$MANAGER" && die 1 "\`$MANAGER\` is not a command"
+                ;;
+
+            *) die 127 "\`$CHOICE\` is not a supported manager" ;;
+        esac
+    fi
+
+    return 0
+}
+
+__is_pkg_name() {
+    local L="$1"
+
+    for REGEX in "${MGR_START_RE[@]}"; do
+        [[ $L =~ $REGEX ]] && return 0
+    done
+
+    return 1
+}
+
+_pacman_exec() {
+    local RESULTS MID
+    RESULTS="$(sudo pacman -Ss "${QUERY[@]}")"
+
+    for E_RE in "${MGR_EXCLUDE_RE[@]}"; do
+        MID="$RESULTS"
+
+        RESULTS="$(echo "$MID" | grep -v -E "$E_RE")" || die 1 "REGEX EXCLUSION FAILED"
+    done
+
+    echo "$RESULTS" >| "$ITMPFILE" || die 1 "ERROR WRITING TO TEMP FILE!"
+    return 0
+}
+
+_aur_exec() {
+    local PRG="$1"
+
+    local RESULTS MID
+    RESULTS="$("$PRG" -aSs "${QUERY[@]}")"
+
+    for E_RE in "${MGR_EXCLUDE_RE[@]}"; do
+        # echo -e "\t$(echo ${RESULTS} | wc)"
+        MID="$RESULTS"
+        RESULTS=$(echo "$MID" | grep -v -E "$E_RE") || die 1 "REGEX EXCLUSION FAILED"
+    done
+
+    echo "$RESULTS" >| "$ITMPFILE" || die 1 "ERROR WRITING TO TEMP FILE!"
+
+    return 0
+}
+
+__filter_tmpfile() {
+    local TXT=()
+    local IFS
+    local START BYE INDATA
+
+    IFS=$'\n' INDATA=($(cat "$ITMPFILE"))
+
+    [[ ${#INDATA[@]} -eq 0 ]] && die 5 "Why empty?"
+
+    for LINE in "${INDATA[@]}"; do
+        if __is_pkg_name "$LINE"; then
+            START=1
+            BYE=0
+            TXT+=("$LINE")
+        elif [[ $START -eq 1 ]] && [[ $BYE -eq 0 ]]; then
+            START=0
+            BYE=1
+            TXT+=("$LINE")
+        fi
+    done
+
+    printf "%s\n" "${TXT[@]}" >| "$OTMPFILE"
+
+    if [[ $USE_PAGER -eq 1 ]]; then
+        "$DEFAULT_PAGER" "$OTMPFILE"
+    else
+        cat "$OTMPFILE"
+    fi
+
+    return 0
+}
+
+[[ $# -eq 0 ]] && die 2 "No arguments given"
+
+while getopts $OPTIONS OP; do
+    case $OP in
+        h) usage 0 ;;
+        m) MANAGER="$OPTARG" ;;
+        q) QUERY+=("$OPTARG") ;;
+        L) USE_PAGER=1 ;;
+        i) INSTALLED=1 ;; # TODO
+        *) usage 1 ;;
+    esac
+done
+
+[[ ${#QUERY[@]} -eq 0 ]] && die 3 "NO QUERY!"
+
+_valid_mgr "$MANAGER" || die 8 "Could not validate manager"
+
+__select_pager || die 7 "PAGER not found!"
+
+case "$MANAGER" in
+    [Pp][Aa][Cc][Mm][Aa][Nn]) _pacman_exec && __filter_tmpfile ;;
+    [Yy][Aa][Yy]) _aur_exec 'yay' && __filter_tmpfile ;;
+    [Pp][Aa][Rr][Uu]) _aur_exec 'paru' && __filter_tmpfile ;;
+esac
+
+die 0
+
+# vim:ts=4:sts=4:sw=4:et:ai:si:sta:noci:nopi:

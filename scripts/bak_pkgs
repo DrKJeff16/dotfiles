@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+
+OPTIONS=":hv"
+
+PKG_MANAGER=''
+MGR_CMD=()
+MGR_CMD_VERB=()
+VERBOSE=0
+
+ELEVATOR='sudo'
+VALID_MANAGERS=(
+    'pacman'
+    'apt-fast'
+    'apt'
+    'apt-get'
+)
+
+error() {
+    local TXT=("$@")
+    printf "%s\n" "${TXT[@]}" >&2
+    return 0
+}
+
+_cmd() {
+    [[ $# -eq 0 ]] && return 127
+
+    while [[ $# -gt 0 ]]; do
+        ! command -v "$1" &> /dev/null && return 1
+
+        shift
+    done
+
+    return 0
+}
+
+die() {
+    local EC=0
+
+    if [[ $# -ge 1 ]] && [[ $1 =~ ^(0|-?[1-9][0-9]*)$ ]]; then
+        EC="$1"
+        shift
+    fi
+
+    if [[ $# -gt 0 ]]; then
+        local TXT=("$@")
+        if [[ $EC -eq 0 ]]; then
+            printf "%s\n" "${TXT[@]}"
+        else
+            error "${TXT[@]}"
+        fi
+    fi
+
+    exit "$EC"
+}
+
+usage() {
+    local EC=0
+    [[ "$1" =~ ^(0|-?[1-9][0-9]*)$ ]] && EC="$1"
+
+    local TXT=(
+        "WIP, sorry"
+        ""
+    )
+
+    die "$EC" "${TXT[@]}"
+}
+
+__select_pkg_manager() {
+    for M in "${VALID_MANAGERS[@]}"; do
+        if _cmd "$M"; then
+            PKG_MANAGER="$M"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+__generate_cmds() {
+    [[ $# -eq 0 ]] && return 127
+
+    local CMD="$1"
+
+    case "$CMD" in
+        pacman)
+            MGR_CMD=(
+                "${ELEVATOR} ${CMD} -Qn | cut -d ' ' -f1 | sort >| $HOME/.packages.list"
+                "${ELEVATOR} ${CMD} -Qm | cut -d ' ' -f1 | sort >| $HOME/.packages_foreign.list"
+            )
+            MGR_CMD_VERB=(
+                "${ELEVATOR} ${CMD} -Qn | cut -d ' ' -f1 | sort | tee $HOME/.packages.list"
+                "${ELEVATOR} ${CMD} -Qm | cut -d ' ' -f1 | sort | tee $HOME/.packages_foreign.list"
+            )
+            ;;
+
+        "apt-fast"|"apt-get"|apt)
+            MGR_CMD=(
+                "${ELEVATOR} $CMD list --installed 2> /dev/null | cut -d '/' -f1 | tail -n +3 | sort >| $HOME/.packages.list"
+            )
+            MGR_CMD_VERB=(
+                "${ELEVATOR} $CMD list --installed 2> /dev/null | cut -d '/' -f1 | tail -n +3 | sort | tee $HOME/.packages.list"
+            )
+            ;;
+        *) return 1 ;;
+    esac
+
+    return 0
+}
+
+while getopts "$OPTIONS" OPTION; do
+    case "$OPTION" in
+        h) usage 0 ;;
+        v) VERBOSE=1 ;;
+        *) usage 1 ;;
+    esac
+done
+
+__select_pkg_manager || exit 127
+__generate_cmds "$PKG_MANAGER" || exit 1
+
+if [[ $VERBOSE -eq 0 ]]; then
+    for COMM in "${MGR_CMD[@]}"; do
+        eval "$COMM" || die 1
+    done
+else
+    for COMM in "${MGR_CMD_VERB[@]}"; do
+        eval "$COMM" || die 1
+    done
+fi
+
+die 0

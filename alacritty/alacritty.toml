@@ -1,0 +1,66 @@
+[general]
+live_config_reload = true
+import = ["~/.config/alacritty/tokyonight-moon.toml"]
+
+[window]
+position = "None"
+padding = { x = 0, y = 0 }
+dynamic_padding = false
+decorations = "Full"
+blur = true
+opacity = 1.0
+startup_mode = "Maximized"
+title = "Alacritty"
+dynamic_title = true
+class = { instance = "Alacritty", general = "Alacritty" }
+decorations_theme_variant = "Dark"
+resize_increments = true
+
+[scrolling]
+history = 64500
+multiplier = 1
+
+[font]
+normal = { family = "FiraCode Nerd Font Mono", style = "Regular" }
+# bold = { family = "FiraCode Nerd Font Mono", style = "Bold" }
+# italic = { family = "FiraCode Nerd Font Mono", style = "Italic" }
+# bold_italic = { family = "FiraCode Nerd Font Mono", style = "Bold Italic" }
+size = 20
+builtin_box_drawing = true
+
+[colors]
+transparent_background_colors = true
+draw_bold_text_with_bright_colors = true
+
+[selection]
+semantic_escape_chars = ",│`|:\"' ()[]{}<>\t"
+save_to_clipboard = false
+
+[cursor]
+style = { shape = "Block", blinking = "Always" }
+vi_mode_style = { shape = "Block", blinking = "Always" }
+blink_interval = 500
+blink_timeout = 0
+unfocused_hollow = true
+thickness = 0.1
+
+[terminal]
+osc52 = "CopyPaste"
+shell = "/bin/bash"
+
+[mouse]
+hide_when_typing = false
+
+[hints]
+alphabet = "jfkdls;ahgurieowpq"
+
+[[hints.enabled]]
+command = "xdg-open" # On Linux/BSD
+# command = "open" # On macOS
+# command = { program = "cmd", args = [ "/c", "start", "" ] } # On Windows
+hyperlinks = true
+post_processing = true
+persist = false
+mouse.enabled = false
+binding = { key = "O", mods = "Control|Shift" }
+regex = "(ipfs:|ipns:|magnet:|mailto:|gemini://|gopher://|https://|http://|news:|file:|git://|ssh:|ftp://)[^\u0000-\u001F\u007F-\u009F<>\"\\s{-}\\^⟨⟩`\\\\]+"

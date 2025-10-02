@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+_cmd() {
+    [[ $# -eq 0 ]] && return 127
+
+    while [[ $# -gt 0 ]]; do
+        if ! command -v "$1" &> /dev/null; then
+            return 1
+        fi
+
+        shift
+    done
+
+    return 0
+}
+
+
+if ! _cmd 'make' || ! [[ -d ./.git ]] || ! [[ -x ./configure ]]; then
+    exit 127
+fi
+
+export CC=gcc
+export CXX=g++
+export CFLAGS='-O2 -march=znver3 -pipe -D_GNU_SOURCE -U_FORTIFY_SOURCE -DNDEBUG'
+
+./configure \
+    --enable-array \
+    --enable-dirstack \
+    --enable-double-bracket \
+    --enable-help \
+    --enable-lineedit \
+    --enable-nls \
+    --enable-printf \
+    --enable-socket \
+    --enable-ulimit \
+    --prefix=/usr || exit 1
+
+make -j"$(nproc)"
+sudo make -j"$(nproc)" install
+
+make -j"$(nproc)" distclean
+
+exit 0
+
+# vim:ft=bash:ts=4:sts=4:sw=4:et:ai:si:sta:noci:nopi:

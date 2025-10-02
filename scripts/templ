@@ -1,0 +1,230 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Template copying tool."""
+import argparse as ap
+import os
+from os import listdir
+from os.path import (abspath, basename, expanduser, isdir, isfile, join,
+                     realpath, relpath)
+from sys import exit as Exit
+from sys import stderr as STDERR
+from sys import stdout as STDOUT
+from typing import Dict, Optional
+
+PROG: str = "templ"
+DESC: str = "Copy set template files from Template directory"
+VERBOSE: bool = False
+
+
+def verb_print(*msg, **kwargs) -> None:
+    """If verbose is `true`, print"""
+    if not VERBOSE:
+        return
+
+    k = dict()
+
+    for arg in (("flush", False), ("file", STDOUT), ("end", "\n"), ("sep", " ")):
+        k.setdefault(arg[0], arg[1])
+
+    for arg in ("flush", "end", "sep", "file"):
+        k[arg] = kwargs.get(arg, k.get(arg))
+
+    print(
+        *msg,
+        file=k.get("file"),
+        end=k.get("err"),
+        sep=k.get("sep"),
+        flush=k.get("flush"),
+        )
+
+
+def err(*msg, **kwargs) -> None:
+    """Print to stderr"""
+    k = dict()
+
+    for arg in (("flush", True), ("end", "\n"), ("sep", " ")):
+        k.setdefault(arg[0], arg[1])
+
+    for arg in ("flush", "end", "sep"):
+        k[arg] = kwargs.get(arg, k.get(arg))
+
+    print(*msg, file=STDERR, end=k.get("err"), sep=k.get("sep"), flush=k.get("flush"))
+
+
+def parser_help(P: ap.ArgumentParser, EC: Optional[int] = 1) -> None:
+    """Print help, then exit with supplied code
+
+    Parameters
+    ----------
+    P : ap.ArgumentParser
+        `argparse` parser instance
+    EC : int, default=1
+        Exit code
+    """
+    if EC is not int:
+        try:
+            EC = int(EC)
+        except Exception:
+            EC = 1
+
+    out = STDOUT if EC == 0 else STDERR
+
+    P.print_help(out)
+    Exit(EC)
+
+
+def parser_usage(P: ap.ArgumentParser, EC: int = 1) -> None:
+    """Print help, then exit with supplied code
+
+    Parameters
+    ----------
+    P : argparse.ArgumentParser
+        `argparse` parser instance
+    EC : int, default=1
+        Exit code
+    """
+    if EC is not int:
+        try:
+            EC = int(EC)
+        except Exception:
+            EC = 1
+
+    out = STDOUT if EC == 0 else STDERR
+
+    P.print_usage(out)
+    Exit(EC)
+
+
+def list_options(D: Dict) -> None:
+    """List output options
+
+    Parameters
+    ----------
+    D : dict
+        Dict with each key as an allowed extension
+    """
+    keys = list(D.keys())
+    keys.sort()
+
+    print("\n".join(keys))
+    Exit(0)
+
+
+def ls_tmpl_dir(dir: str = "~/Templates") -> Dict:
+    """List all files in template directory
+
+    Parameters
+    ----------
+    dir : str, default="~/Templates"
+        Template dir string
+    """
+    if dir is not str or dir == "":
+        dir = "~/Templates"
+
+    dir = abspath(expanduser(dir.rstrip("/")))
+
+    res = dict()
+
+    onlyfiles = [f.rstrip("/") for f in listdir(dir) if isfile(join(dir, f))]
+    onlyfiles.sort()
+
+    for path in onlyfiles:
+        res[".".join(basename(path).split(".")[1:]).strip(".")] = join(dir, path)
+
+    return res
+
+
+def main() -> int:
+    """Execute main workflow"""
+    global VERBOSE
+
+    Parser = ap.ArgumentParser(PROG, description=DESC)
+
+    Parser.add_argument(
+        "-l",
+        "--list",
+        action="store_true",
+        dest="list",
+        help="List available extensions",
+        )
+    Parser.add_argument(
+        "-e",
+        "--extension",
+        dest="ext",
+        default="",
+        help="Extension to copy (see `-l` for available extensions)",
+        )
+    Parser.add_argument(
+        "-o", "--out", dest="out", default=".", help="Output directory or directories"
+        )
+    Parser.add_argument(
+        "-D",
+        "--template-dir",
+        dest="t",
+        default="~/Templates",
+        help="Template directory or directories",
+        )
+    Parser.add_argument(
+        "-v", "--verbose", dest="verb", action="store_true", help="Verbose mode"
+        )
+
+    args = Parser.parse_args()
+
+    if args.verb:
+        VERBOSE = True
+
+    tmpl_dict = ls_tmpl_dir(args.t)
+
+    tmpl_exts = list(tmpl_dict.keys())
+    tmpl_exts.sort()
+    tmpl_exts = tuple(tmpl_exts.copy())
+
+    if args.list:
+        list_options(tmpl_dict)
+
+    if args.ext in ("", "?"):
+        err("No extension provided\n")
+        parser_usage(Parser)
+
+    if args.ext not in tmpl_exts:
+        err(f"Invalid extension `{args.ext}`\n")
+        parser_help(Parser)
+
+    if args.out in ("", "?"):
+        err("No output path provided\n")
+        parser_usage(Parser)
+
+    if not (isdir(args.out) and isdir(realpath(args.out))):
+        err(f"Invalid output path `{args.out}`\n")
+        parser_help(Parser)
+
+    filename = join(realpath(args.out), "template") + "." + args.ext
+
+    if not isfile(filename):
+        f = open(filename, "x")
+        f.close()
+        del f
+
+    with open(filename, "w") as file:
+        src_file = tmpl_dict[args.ext]
+        src = open(src_file, "r")
+
+        verb_print(f"{src_file} ==> {relpath(filename)}")
+
+        buf = list()
+
+        data = src.readline()
+        while data != "":
+            buf.append(data)
+            data = src.readline()
+
+        src.close()
+
+        file.write("".join(buf))
+        verb_print("\nSuccess")
+
+    return 0
+
+
+if __name__ == "__main__":
+    Exit(main())

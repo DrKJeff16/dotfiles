@@ -1,0 +1,273 @@
+#!/usr/bin/env bash
+
+OPTIONS=':hvfcF:'
+FORCE=0
+VERBOSE=0
+FORTIFY=0
+CONFIGURE_ONLY=0
+CONFIGURED=0
+
+CURR_DIR="$(pwd)"
+
+export CC='gcc' CXX='g++' CFLAGS="-O2 -g -march=native -pipe -D_GNU_SOURCE -DNDEBUG"
+TARGET_PFX="/usr/local"
+DATAROOTDIR="$TARGET_PFX/share"
+MAN_D="$DATAROOTDIR/man"
+INFO_D="$DATAROOTDIR/info"
+DOC_D="$DATAROOTDIR/doc"
+NPROC="$(nproc)"
+
+COMPILE_LOG="$HOME/.cache/vim_compile.log"
+
+VIMRT="$TARGET_PFX/share/vim/vim91"
+
+MAKECMD="make -j$NPROC -l$(( NPROC + 1 )) VIMRUNTIMEDIR=$VIMRT"
+
+error() {
+    local TXT=("$@")
+    printf "%s\n" "${TXT[@]}" >&2
+    return 0
+}
+
+_cmd() {
+    [[ $# -eq 0 ]] && return 127
+
+    while [[ $# -gt 0 ]]; do
+        if ! command -v "$1" &> /dev/null; then
+            return 1
+        fi
+
+        shift
+    done
+
+    return 0
+}
+
+die() {
+    local EC=0
+
+    local POPPED_D=0
+    # In case a chdir operation occured
+    while [[ "$(pwd)" == "$HOME/.build/vim/"* ]]; do
+        if [[ $POPPED_D -eq 0 ]]; then
+            popd &> /dev/null || POPPED_D=1
+        else
+            cd .. || exit 4
+        fi
+    done
+
+    if [[ $# -gt 0 ]] && [[ $1 =~ ^(0|-?[1-9][0-9]*)$ ]]; then
+        EC="$1"
+        shift
+    fi
+
+    if [[ $# -gt 0 ]]; then
+        local TXT=("$@")
+        if [[ $EC -eq 0 ]]; then
+            printf "%s\n" "${TXT[@]}"
+        else
+            error "${TXT[@]}"
+        fi
+    fi
+
+    exit "$EC"
+}
+
+usage() {
+    local EC=0
+    [[ "$1" =~ ^(0|-?[1-9][0-9]*)$ ]] && EC="$1"
+
+    local TXT=(
+        "build_nvim: A boring neovim build script."
+        ""
+        "  usage:   build_nvim -h"
+        "           build_nvim [ -v ] [ -f ] [ -c ] [ -F {1,2,3} ]"
+        ""
+        "     -h                                    Prints this help message (exit code: 0)"
+        "     -f                                    Skip validation for CWD, attempt to build regardless"
+        "     -c                                    Only trigger \`configure\` stage"
+        "     -v                                    Verbose mode"
+        ""
+    )
+
+    die "$EC" "${TXT[@]}"
+}
+
+if ! _cmd 'yn'; then
+    function yn() {
+        local PROMPT=()
+        if [[ $# -eq 0 ]]; then
+            PROMPT=("Continue?")
+        else
+            PROMPT=("$@")
+        fi
+
+        local LIMIT LIN TRIES=3
+
+        LIMIT=${#PROMPT[@]}
+
+            LIMIT=$((LIMIT - 1))
+
+            while [[ $TRIES -gt 0 ]]; do
+                for I in $(seq 0 $LIMIT); do
+                    LIN="${PROMPT[I]}"
+
+                    if [[ $I -eq $LIMIT ]]; then
+                        printf "%s[Y/N]: " "$LIN"
+                    else
+                        printf "%s\n" "$LIN"
+                    fi
+                done
+
+                if [[ $TRIES -le 0 ]]; then
+                    error "You exceeded the maximum amount of tries."
+                    return 1
+                fi
+
+                local ANS
+                read -rp "" ANS
+
+                case "$ANS" in
+                    [Yy]|[Yy][Ee][Ss]) return 0 ;;
+                    [Nn]|[Nn][Oo]) return 1 ;;
+                    *) continue ;;
+                esac
+
+                TRIES=$((TRIES - 1))
+            done
+
+            return 1
+        }
+fi
+
+_pull() {
+    if [[ $FORCE -eq 1 ]]; then
+        echo -n >| "$COMPILE_LOG"
+        return 0
+    fi
+
+    if [[ $VERBOSE -eq 0 ]]; then
+        git pull --rebase >| "$COMPILE_LOG" || die 2 "\`git pull --rebase\` failed"
+    else
+        git pull --rebase | tee "$COMPILE_LOG" || die 2 "\`git pull --rebase\` failed"
+    fi
+
+    if [[ "$(cat "$COMPILE_LOG")" == *"Already up to date"* ]] && [[ $FORCE -eq 0 ]]; then
+        ! yn "Already up to date. Continue?" && die 0
+    fi
+
+    return 0
+}
+
+_configure() {
+    ./configure \
+        VIMRUNTIMEDIR="$VIMRT" \
+        --datarootdir="$DATAROOTDIR" \
+        --disable-darwin \
+        --disable-farsi \
+        --disable-gtk2-check \
+        --disable-rightleft \
+        --disable-selinux \
+        --docdir="$DOC_D" \
+        --enable-autoservername \
+        --enable-cscope \
+        --enable-fail-if-missing \
+        --enable-fontset \
+        --enable-gtk3-check \
+        --enable-gui='gtk3' \
+        --enable-luainterp='dynamic' \
+        --enable-multibyte \
+        --enable-perlinterp='dynamic' \
+        --enable-python3interp='dynamic' \
+        --enable-rubyinterp='dynamic' \
+        --enable-tclinterp='dynamic' \
+        --enable-terminal \
+        --infodir="$INFO_D" \
+        --mandir="$MAN_D" \
+        --prefix="$TARGET_PFX" \
+        --sysconfdir="/etc" \
+        --with-features='huge' \
+        --with-luajit \
+        --with-python3-config-dir="$(python3-config --configdir)" \
+        --without-gnome \
+        --without-x \
+        --with-compiledby='DrKJeff16' 2>&1 | tee "$COMPILE_LOG"
+
+    CONFIGURED=1
+
+    return $?
+}
+
+_verify_configured() {
+    if [[ $CONFIGURED -ne 1 ]] || ! [[ -f ./auto/config.mk ]]; then
+        return 1
+    fi
+
+    CONFIGURED=1
+    return 0
+}
+
+_drop_fortify() {
+    if ! _verify_configured; then
+        die 1 "Is this even configured?"
+    fi
+
+    if [[ "$FORTIFY" =~ ^[1-3]$ ]]; then
+        ! sed -i "s/\s-D_FORTIFY_SOURCE=[0-9]/ -D_FORTIFY_SOURCE=${FORTIFY}/g" ./auto/config.mk \
+            && die 6 "_drop_fortify: ERROR when trying to run \`sed\`!"
+
+        return 0
+    fi
+
+    ! sed -i 's/\s-D_FORTIFY_SOURCE=[0-9]//g' ./auto/config.mk \
+        && die 6 "_drop_fortify: ERROR when trying to run \`sed\`!"
+
+    return 0
+}
+
+if ! _cmd 'make' 'git'; then
+    die 127 "Either \`make\` or \`git\` not found in PATH"
+fi
+
+if [[ "$(basename "$CURR_DIR")" != "src" ]]; then
+    die 127 "Not in \`src/\` directory"
+fi
+
+if ! [[ -d ../.git ]]; then
+    die 127 "Not in \`src/\` directory"
+fi
+if ! [[ -x ./configure ]]; then
+    die 127 "No \`./configure\` executable"
+fi
+
+while getopts "$OPTIONS" OPTION; do
+    case "$OPTION" in
+        h) usage 0 ;;
+        v) VERBOSE=1 ;;
+        F) FORTIFY="${OPTARG}" ;;
+        f) FORCE=1 ;;
+        c) CONFIGURE_ONLY=1 ;;
+        :) usage 1 ;;
+        ?) usage 1 ;;
+        *) usage 1 ;;
+    esac
+done
+
+_pull
+
+eval "$MAKECMD distclean || die 1 \"\`make distclean\` failed\""
+
+_configure
+_drop_fortify
+EC=$?
+
+[[ $CONFIGURE_ONLY -eq 1 ]] && die "$EC"
+
+eval "$MAKECMD" || die 1 "Compilation failed"
+eval "sudo $MAKECMD install"
+
+eval "$MAKECMD distclean"
+git restore --staged ../.
+git restore ../.
+
+die 0

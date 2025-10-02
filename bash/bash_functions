@@ -1,0 +1,965 @@
+#
+# ~/.bash_functions
+#
+
+# shellcheck disable=1090,2044,2207
+
+# Print all args `stderr`
+error() {
+    local TXT=("$@")
+    printf "%s\n" "${TXT[@]}" >&2
+    return 0
+}
+export -f error
+complete -W "" error
+
+# Check whether a given console command exists
+_cmd() {
+    if [[ $# -eq 0 ]]; then
+        error "What command?"
+        return 127
+    fi
+
+    local OPTS=":hv"
+    local VERBOSE=0
+    local CMDS=()
+    local EXES=()
+    local ARG
+
+    while getopts "$OPTS" ARG; do
+        case "$ARG" in
+            h) return 0 ;;
+            v) VERBOSE=$((VERBOSE + 1))   ;;
+            *)
+                command -v "$ARG" &> /dev/null || return 1
+                CMDS+=("$ARG")
+                EXES+=("$(command -v "$ARG" 2> /dev/null)")
+                ;;
+        esac
+
+        shift
+    done
+
+    if [[ $VERBOSE -eq 1 ]]; then
+        printf "%s\n" "${CMDS[@]}"
+    elif [[ $VERBOSE -eq 2 ]]; then
+        printf "\`%s\` ==> OK\n" "${CMDS[@]}"
+    elif [[ $VERBOSE -ge 3 ]]; then
+        for I in $(seq 1 ${#CMDS[@]}); do
+            I=$((I - 1))
+            printf "\`%s\` ==> \`%s\` ==> OK\n" "${CMDS[I]}" "${EXES[I]}"
+        done
+
+        unset I
+    fi
+
+    return 0
+}
+export -f _cmd
+complete -c _cmd
+
+_cmd_exec() {
+    [[ $# -eq 0 ]] && return 127
+
+    local PROG="$1"
+
+    ! _cmd "$PROG" && return 1
+
+    local CMD_ARR=("$@")
+    local CMD_STR=""
+
+    for ARGV in "${CMD_ARR[@]}"; do
+        if [[ -z "$CMD_STR" ]]; then
+            CMD_STR+="$ARGV"
+        else
+            CMD_STR+=" $ARGV"
+        fi
+    done
+
+    eval "$CMD_STR"
+
+    return $?
+}
+export -f _cmd_exec
+
+_file_readable_writeable() {
+    [[ $# -eq 0 ]] && return 127
+
+    [[ -f "$1" ]] || return 1
+    [[ -r "$1" ]] || return 1
+    [[ -w "$1" ]] || return 1
+
+    return 0
+}
+export -f _file_readable_writeable
+complete -A file _file_readable_writeable
+
+_file_rw_not_empty() {
+    [[ $# -eq 0 ]] && return 127
+
+    _file_readable_writeable "$1" || return 1
+    [[ -s "$1" ]] || return 1
+
+    return 0
+}
+export -f _file_rw_not_empty
+complete -A file _file_rw_not_empty
+
+_strip_from_arr() {
+    [[ $# -le 2 ]] && error "No arguments passed" && return 127
+
+    local STRIP="" ARR=() TARGET=""
+
+    STRIP="$1"
+    shift
+    TARGET="$1"
+    shift
+
+    if [[ $TARGET =~ ^\$[a-zA-Z_][a-zA-Z0-9_]+$ ]]; then
+        error "(_strip_from_arr): Second argument (TARGET) can't have a \`\$\` at the start" "Aborting"
+        return 5
+    fi
+    if ! [[ $TARGET =~ ^[a-zA-Z_][a-zA-Z0-9_]+$ ]]; then
+        error "(_strip_from_arr): Second argument ($TARGET) can't be set as variable!" "Aborting"
+        return 4
+    fi
+
+    ARR=("$@")
+    eval "$TARGET=()"
+
+    for I in "${ARR[@]}"; do
+        [[ "$I" != "$STRIP" ]] && eval "$TARGET+=(\"$I\")"
+    done
+
+    eval "export $TARGET"
+    return 0
+}
+export -f _strip_from_arr
+complete -W "" _strip_from_arr
+
+__loop_src() {
+    [[ $# -eq 0 ]] && error "(__loop_src): No input given" && return 127
+    local EC=0
+    local TARGET
+    local ALL_ARGS=("$@")
+    local RECURSIVE=0
+
+    for ARG in "${ALL_ARGS[@]}"; do
+        [[ "$ARG" == "-r" ]] && RECURSIVE=1
+    done
+
+    while [[ $# -gt 0 ]]; do
+        TARGET="$1"
+
+        [[ $RECURSIVE -eq 1 ]] && [[ "$TARGET" == "-r" ]] && shift && continue
+        ! [[ -d "$TARGET" ]] && error "\"$TARGET\" is not a directory. Skipping." && EC=1 && shift && continue
+
+        for F in "$TARGET"/*; do
+            if [[ $RECURSIVE -eq 0 ]] && [[ -f "$F" ]]; then
+                if ! . "$F"; then
+                    error "(__loop_src): \`${TARGET}/${F}\` triggered an error. Aborting"
+                    return 2
+                fi
+            elif [[ $RECURSIVE -eq 1 ]] && [[ -d "$F" ]]; then
+                __loop_src "$F" || EC=1
+            fi
+        done
+
+        shift
+    done
+
+    return "$EC"
+}
+export -f __loop_src
+complete -A directory __loop_src
+
+# Source given file IF AND ONLY IF it exists
+__cond_src() {
+    if [[ $# -eq 0 ]]; then
+        error "(__cond_src): No input given"
+        return 127
+    fi
+
+    local TARGET=""
+
+    TARGET="$1"
+
+    if [[ -d "$TARGET" ]] && [[ -n "$(ls -A1 "$TARGET")" ]]; then
+        __loop_src "$TARGET" || return 1
+    elif ! [[ -f "$TARGET" ]]; then
+        error "(__cond_src): \`$TARGET\` is not a valid file nor a directory. Aborting"
+        return 127
+    fi
+
+    . "$TARGET"
+    return $?
+}
+export -f __cond_src
+complete -A file -A directory __cond_src
+
+# Create `~/.local/...` directories
+_create_dotlocals() {
+    local EC=0
+
+    for D in bin etc include lib share state var run; do
+        if ! [[ -d "$HOME/.local/$D" ]]; then
+            command mkdir -p "$HOME/.local/$D"
+            EC=1
+        fi
+
+        [[ $EC -ne 0 ]] && break
+    done
+
+    return 0
+}
+export -f _create_dotlocals
+complete -W "" _create_dotlocals
+
+__append2var() {
+    if [[ $# -ne 2 ]]; then
+        error "(__append2var): Need TWO arguments!" "Aborting"
+        return 127
+    fi
+
+    local VAR QRY
+
+    VAR="$1"
+    QRY="$2"
+
+    if [[ $VAR =~ ^\$.*$ ]]; then
+        error "(__append2var): Variable starts with an \`\$\`!" "Aborting"
+        return 3
+    fi
+
+    if eval "test -z \${${VAR}+X}"; then
+        eval "export ${VAR}=\"${QRY}\""
+        return $?
+    fi
+
+    if eval "echo \"\$$VAR\" | grep ':' > /dev/null 2>&1"; then
+        # WARNING: DO THIS WITH `$IFS` OR YOU'LL MESS WITH YOUR COMPLETIONS
+        local ARR IFS
+
+        ARR=()
+
+        IFS=$'\n' ARR=($(eval "echo \$$VAR" | sed 's/:/\n/g'))
+
+        for V in "${ARR[@]}"; do
+            # If `$QRY`'s value is found in the array
+            [[ "$QRY" == "$V" ]] && return 1
+        done
+    fi
+
+    eval "$VAR=\"${QRY}:\${$VAR}\""
+
+    return $?
+}
+export -f __append2var
+complete -W "" __append2var
+
+__append2path() {
+    [[ $# -eq 0 ]] && return 127
+
+    local DIR="$1"
+    __append2var "PATH" "$DIR"
+
+    return $?
+}
+export -f __append2path
+complete -A directory __append2path
+
+# NOTE: Must keep the `function` keyword or the shell will interpret it as
+#       a standard `help` builtin call.
+function help() {
+    command help "$@" -m | man -l
+    return $?
+}
+export -f help
+
+# HACK: If `man` does not exist, unset function above
+! _cmd 'man' && unset -f help
+
+# A wrapper for `pushd`
+pd() {
+    if pushd "$@" 2> /dev/null; then
+        ls -A --color=auto
+        return 0
+    fi
+
+    return 1
+}
+export -f pd
+complete -A directory pd
+
+upd_spc() {
+    if ! [[ -d "$SPC_D" ]]; then
+        error "Directory \`$SPC_D\` is non-existant" "Aborting"
+        return 127
+    fi
+    if ! _cmd 'git'; then
+        error "\`git\` is not available!" "Aborting"
+        return 127
+    fi
+
+    local OLD_CWD
+
+    OLD_CWD="$(pwd)"
+
+    if ! cd "$SPC_D" &> /dev/null; then
+        error "Could not enter \`$SPC_D\`!" "Have you checked your permissions?"
+        return 127
+    fi
+
+    local EC=0
+
+    git pull --rebase || EC=1
+    cd "$OLD_CWD" &> /dev/null || EC=2
+
+    return "$EC"
+}
+export -f upd_spc
+complete -W "" upd_spc
+
+_yn() {
+    local PROMPT=()
+
+    if [[ $# -eq 0 ]]; then
+        PROMPT=("Continue?")
+    else
+        PROMPT=("$@")
+    fi
+
+    local LIN
+    local TRIES=3
+    local LIMIT=${#PROMPT[@]}
+    LIMIT=$((LIMIT - 1))
+
+    while [[ $TRIES -gt 0 ]]; do
+        TRIES=$((TRIES - 1))
+
+        for I in $(seq 0 $LIMIT); do
+            LIN="${PROMPT[I]}"
+            if [[ $I -eq $LIMIT ]]; then
+                printf "%s[Y/N]: " "$LIN"
+            else
+                printf "%s\n" "$LIN"
+            fi
+        done
+        [[ $TRIES -le 0 ]] && error "You exceeded the maximum amount of tries." && return 1
+
+        local ANS
+        read -rp "" ANS
+
+        case "$ANS" in
+            [Yy] | [Yy][Ee][Ss]) return 0 ;;
+            [Nn] | [Nn][Oo]) return 1 ;;
+            *) continue ;;
+        esac
+    done
+}
+export -f _yn
+complete -W "" _yn
+
+up() {
+    local N=1
+    local MAX_LOOP=100
+    if [[ $# -eq 0 ]]; then
+        N=1
+    elif [[ "$1" =~ ^[1-9][0-9]*$ ]]; then
+        N="$1"
+    elif [[ "$1" =~ ^(-?0|-[1-9][0-9]*)$ ]]; then
+        N="$1"
+        error "Refusing to ascend \`$(tput bold)$(tput setaf 1)${N}$(tput sgr0)\` directories"
+        return 127
+    else
+        N="$1"
+        error "Argument's not a number (\`${N}\`)"
+        return 127
+    fi
+
+    while [[ $N -gt 0 ]] && [[ $MAX_LOOP -gt 0 ]]; do
+        if [[ "$(pwd)" == / ]]; then
+            error "Root reached, stopping"
+            break
+        fi
+
+        cd ..
+        N=$((N - 1))
+        MAX_LOOP=$((MAX_LOOP - 1))
+    done
+
+    [[ $MAX_LOOP -le 0 ]] && error "Infinite loop caught, aborting" && return 2
+
+    if [[ $N -eq 0 ]]; then
+        ls --color=auto -A
+        return 0
+    fi
+
+    return 1
+}
+export -f up
+
+xedit() {
+    if [[ $# -eq 0 ]]; then
+        error "No targets given"
+        return 127
+    fi
+
+    local TARGET FPATH
+
+    TARGET="$1"
+    if ! which "$TARGET" &> /dev/null; then
+        error "\`$TARGET\` not in \`\$PATH\`"
+        return 127
+    fi
+
+    FPATH="$(which "$TARGET" 2> /dev/null)"
+
+    if file "$FPATH" 2> /dev/null | grep -E '(symbolic)?\slink' &> /dev/null; then
+        error "File \`$FPATH\` is a symlink" "This program doesn't edit symlinks for security"
+        return 2
+    fi
+
+    if ! file "$FPATH" 2> /dev/null | grep -i text &> /dev/null; then
+        error "File \`$FPATH\` looks like a binary file" "This program doesn't edit binaries"
+        return 1
+    fi
+
+    if [[ "$EDITOR" == "nvim" ]] || [[ "$EDITOR" == "vim" ]]; then
+        "$EDITOR" "$FPATH" +"cd \"$(dirname "$FPATH")\""
+    else
+        "$EDITOR" "$FPATH"
+    fi
+
+    return 0
+}
+export -f xedit
+complete -c xedit
+
+dot_clangd() {
+    local DOT_CLANGD=""
+    local CLANGD_PFX="$HOME/.config/clangd"
+
+    if [[ -f "$CLANGD_PFX/config.yml" ]]; then
+        DOT_CLANGD="$CLANGD_PFX/config.yml"
+    elif [[ -f "$CLANGD_PFX/config.yaml" ]]; then
+        DOT_CLANGD="$CLANGD_PFX/config.yaml"
+    else
+        return 1
+    fi
+
+    cp "$DOT_CLANGD" "$(pwd)/.clangd"
+    return $?
+}
+export -f dot_clangd
+complete -W "" dot_clangd
+
+edenv() {
+    if [[ $# -eq 0 ]]; then
+        error "No targets given"
+        return 127
+    fi
+    if [[ -z ${ENVD+X} ]]; then
+        error "\`\$ENVD\` hasn't been defined!" "Aborting"
+        return 127
+    fi
+    if ! [[ -d "$ENVD" ]]; then
+        error "\`$ENVD\` is not a directory!" "Aborting"
+        return 127
+    fi
+
+    local TARGET FPATH
+    local EC=1
+
+    TARGET="$1"
+
+    for F in "$ENVD"/*.bash; do
+        FPATH="$(basename "$F" | rev | cut -d '.' -f2- | rev)"
+
+        if [[ "$FPATH" == "$TARGET" ]] || [[ "${FPATH}.bash" == "$TARGET" ]]; then
+            "$EDITOR" +"cd \"$ENVD\"" "$F" && EC=0
+        fi
+    done
+
+    if [[ $EC -ne 0 ]]; then
+        if [[ $TARGET =~ ^[a-zA-Z0-9_\-]+\.bash$ ]]; then
+            "$EDITOR" +"cd \"$ENVD\"" "${ENVD}/$TARGET" && EC=0
+        elif [[ $TARGET =~ ^[a-zA-Z0-9_\-]+$ ]]; then
+            "$EDITOR" +"cd \"$ENVD\"" "${ENVD}/${TARGET}.bash" && EC=0
+        fi
+    fi
+
+    return "$EC"
+}
+export -f edenv
+
+gobld() {
+    # If `$BUILDD` is empty
+    [[ -z ${BUILDD+X} ]] && return 127
+
+    if [[ $# -eq 0 ]]; then
+        pd "$BUILDD" || return 1
+        return 0
+    fi
+
+    local TARGET="$BUILDD"
+
+    local DIR=""
+
+    while [[ $# -gt 0 ]] && [[ -d "$TARGET" ]]; do
+        local FOR_SUCCESS=0
+
+        for D in $(find "$TARGET" -maxdepth 1 -type d | tail -n +2); do
+            DIR="$(basename "$D")"
+
+            if [[ "$1" == "$DIR" ]]; then
+                FOR_SUCCESS=1
+                TARGET="${TARGET}/${DIR}"
+                shift
+                break
+            fi
+        done
+
+        # Failsafe
+        if [[ $FOR_SUCCESS -eq 0 ]]; then
+            return 1
+        fi
+    done
+
+    pd "$TARGET" && return 0
+
+    return 1
+}
+export -f gobld
+
+goproj() {
+    local TARGET="$HOME/Projects"
+    ! [[ -d "$TARGET" ]] && return 127
+
+    if [[ $# -eq 0 ]]; then
+        pd "$TARGET"
+        return 0
+    fi
+
+    local DIR=""
+
+    while [[ $# -gt 0 ]] && [[ -d "$TARGET" ]]; do
+        local FOR_SUCCESS=0
+
+        for D in $(find "$TARGET" -maxdepth 1 -type d | tail -n +2); do
+            DIR="$(basename "$D")"
+
+            if [[ "$1" == "$DIR" ]]; then
+                FOR_SUCCESS=1
+                TARGET="${TARGET}/${DIR}"
+                shift
+                break
+            fi
+        done
+
+        # Failsafe
+        if [[ $FOR_SUCCESS -eq 0 ]]; then
+            return 1
+        fi
+    done
+
+    pd "$TARGET" && return 0
+
+    return 1
+}
+export -f goproj
+
+gocfg() {
+    local TARGET="$HOME/.config"
+    ! [[ -d "$TARGET" ]] && return 127
+
+    [[ $# -eq 0 ]] && pd "$TARGET" && return 0
+    local DIR=""
+
+    for D in $(find "$TARGET" -maxdepth 1 -type d | tail -n +2); do
+        DIR="$(basename "$D")"
+
+        if [[ "$1" == "$DIR" ]]; then
+            pd "${TARGET}/${DIR}" && return 0
+        fi
+    done
+
+    return 1
+}
+export -f gocfg
+
+__get_last_cmd() {
+    printf "%s" "$?"
+    return 0
+}
+export -f __get_last_cmd
+complete -W "" __get_last_cmd
+
+__simple_alias() {
+    [[ $# -lt 2 ]] && return 127
+
+    while [[ $# -ge 2 ]]; do
+        local ALIAS="$1"
+        local ALIAS_CMD="$2"
+
+        eval "alias ${ALIAS}='${ALIAS_CMD}'"
+        shift 2
+    done
+    return $?
+}
+export -f __simple_alias
+complete -W "" __simple_alias
+
+__cmd_alias() {
+    [[ $# -lt 3 ]] && return 127
+
+    while [[ $# -ge 3 ]]; do
+        local CMD="$1"
+        local ALIAS="$2"
+        local ALIAS_CMD="$3"
+
+        _cmd "$CMD" && __simple_alias "$ALIAS" "$ALIAS_CMD"
+        shift 3
+    done
+
+    return 0
+}
+export -f __cmd_alias
+complete -W "" __cmd_alias
+
+__alias_no_complete() {
+    [[ $# -lt 2 ]] && return 1
+
+    while [[ $# -ge 2 ]]; do
+        local ALIAS="$1"
+        local ALIAS_CMD="$2"
+
+        eval "alias $ALIAS='$ALIAS_CMD' && complete -W '' $ALIAS"
+        shift 2
+    done
+}
+export -f __alias_no_complete
+complete -W "" __alias_no_complete
+
+__cmd_alias_no_complete() {
+    [[ $# -lt 3 ]] && return 127
+
+    while [[ $# -ge 3 ]]; do
+        local CMD="$1"
+        local ALIAS="$2"
+        local ALIAS_CMD="$3"
+
+        _cmd "$CMD" && __alias_no_complete "$ALIAS" "$ALIAS_CMD"
+        shift 3
+    done
+}
+export -f __alias_no_complete
+complete -W "" __alias_no_complete
+
+__alias_complete_alias() {
+    [[ $# -lt 2 ]] && return 127
+    ! _cmd _complete_alias && return 127
+
+    while [[ $# -ge 2 ]]; do
+        local ALIAS="$1"
+        local ALIAS_CMD="$2"
+
+        eval "alias $ALIAS='$ALIAS_CMD'"
+        complete -F _complete_alias "$ALIAS"
+        shift 2
+    done
+}
+export -f __alias_complete_alias
+complete -W "" __alias_complete_alias
+
+__cmd_alias_complete_alias() {
+    [[ $# -lt 3 ]] && return 127
+    while [[ $# -ge 3 ]]; do
+        local CMD="$1"
+        local ALIAS="$2"
+        local ALIAS_CMD="$3"
+
+        _cmd "$CMD" && __alias_complete_alias "$ALIAS" "$ALIAS_CMD"
+        shift 3
+    done
+}
+export -f __cmd_alias_complete_alias
+complete -W "" __cmd_alias_complete_alias
+
+__pip_alias() {
+    local PY_EXE=''
+
+    if ! _cmd 'python' && ! _cmd 'python3'; then
+        error "No \`python\` nor \`python3\` in PATH"
+        return 127
+    elif _cmd 'python3'; then
+        PY_EXE='python3'
+    else
+        PY_EXE='python'
+    fi
+
+    local EC=1
+
+    if "$PY_EXE" -m pip -h &> /dev/null; then
+        __alias_complete_alias \
+            pip "$PY_EXE -m pip" \
+            pip3 'pip'
+
+        EC=$?
+    fi
+
+    return $EC
+}
+export -f __pip_alias
+complete -W "" __pip_alias
+
+__prompt_ec() {
+    local EC=0
+
+    if [[ $# -gt 0 ]] && [[ "$1" =~ ^-?[0-9]+$ ]]; then
+        EC="$1"
+    fi
+
+    case "$EC" in
+        0) : ;;
+        *) printf "%s " "$EC" ;;
+    esac
+
+    return 0
+}
+export -f __prompt_ec
+complete -W "" __prompt_ec
+
+select_cc() {
+    local HELP=0
+    local EC=0
+    local COMP=""
+
+    if [[ $# -eq 0 ]]; then
+        HELP=1
+        EC=1
+    fi
+
+    if [[ "$1" =~ ^(-h|-?-help)$ ]]; then
+        HELP=1
+    else
+        COMP="$1"
+    fi
+
+    shift
+
+    if [[ $# -gt 0 ]] && [[ $HELP -ne 1 ]]; then
+        while getopts ":h" OPTION; do
+            case "$OPTION" in
+                h)
+                    HELP=1
+                    EC=0
+                    ;;
+                *)
+                    HELP=1
+                    EC=1
+                    ;;
+            esac
+        done
+    fi
+
+    if [[ $HELP -eq 1 ]]; then
+        local TXT=(
+            "select_cc"
+            "  usage:    select_cc [-h]"
+            "            select_cc gcc|g++|gnu|default       # CC=gcc,   CXX=g++"
+            "            select_cc clang[++]|llvm            # CC=clang, CXX=clang++"
+            "            select_cc cc|c++                    # CC=gcc,   CXX=g++"
+            ""
+        )
+
+        [[ $EC -eq 0 ]] && printf "%s\n" "${TXT[@]}"
+        [[ $EC -ne 0 ]] && error "${TXT[@]}"
+    else
+        case "$COMP" in
+            [Gg][Cc][Cc] | [Gg]"++" | [Gg][Nn][Uu])
+                if _cmd 'gcc' && _cmd 'g++'; then
+                    export CC='gcc' CXX='g++'
+                else
+                    error "\`gcc\` and/or \`g++\` are not available in PATH. Aborting"
+                    EC=1
+                fi
+                ;;
+            [Cc][Ll][Aa][Nn][Gg] | [Ll][Ll][Vv][Mm] | [Cc][Ll][Aa][Nn][Gg]"++")
+                if _cmd 'clang' && _cmd 'clang++'; then
+                    export CC='clang' CXX='clang++'
+                else
+                    error "\`clang\` and/or \`clang++\` are not available in PATH. Aborting"
+                    EC=1
+                fi
+                ;;
+            [Cc][Cc] | [Cc]"++")
+                if _cmd 'cc' && _cmd 'c++'; then
+                    export CC='cc' CXX='c++'
+                else
+                    error "\`cc\` and/or \`c++\` are not available in PATH. Aborting"
+                    EC=1
+                fi
+                ;;
+        esac
+    fi
+
+    return "$EC"
+}
+export -f select_cc
+
+comp_commands() {
+    if ! _cmd 'jq' 'make'; then
+        error "(comp_commands): \`jq\` and/or \`make\` are not available in PATH"
+        return 127
+    fi
+
+    if ! [[ -f ./Makefile ]]; then
+        error "(comp_commands): No Makefile was found!"
+        return 127
+    fi
+
+    local OPTS=":hv"
+    local VERBOSE=0
+    local CMD="make --always-make --dry-run | grep -E '(g?cc|(c|g)\+\+|clang\+?\+?)' | grep -w '\-c' | jq -nR '[inputs|{directory:\".\", command:., file: match(\" [^ ]+\$\").string[1:]}]'"
+
+    if [[ $# -eq 0 ]]; then
+        eval "${CMD}" >| compile_commands.json
+        return $?
+    fi
+
+    local EC=0
+
+    while getopts "$OPTS" ARG; do
+        case "$ARG" in
+            h) return 0 ;;
+            v) VERBOSE=1 ;;
+            *)
+                error "(comp_commands): Invalid args!"
+                return 1
+                ;;
+        esac
+
+        shift
+    done
+
+    if [[ $VERBOSE -eq 0 ]]; then
+        eval "${CMD}" >| compile_commands.json
+        EC=$?
+    else
+        eval "${CMD}" | tee compile_commands.json
+        EC=$?
+    fi
+
+    return "$EC"
+}
+export -f comp_commands
+complete -W '' comp_commands
+
+cl() {
+    if [[ $# -eq 0 ]] && [[ "$(pwd)" == "$HOME" ]]; then
+        return 0
+    fi
+    local dir="$1"
+    local dir="${dir:=$HOME}"
+    if [[ -d "$dir" ]]; then
+        cd "$dir" >/dev/null || return 1
+        ls -A --color=auto
+    else
+        echo "bash: cl: $dir: Directory not found"
+    fi
+}
+export -f cl
+complete -A directory cl
+
+if which 'wezterm' &> /dev/null; then
+    # This function emits an OSC 1337 sequence to set a user var
+    # associated with the current terminal pane.
+    # It requires the `base64` utility to be available in the path.
+    # This function is included in the wezterm shell integration script, but
+    # is reproduced here for clarity
+    function __wezterm_set_user_var() {
+        if ! hash base64 2> /dev/null; then
+            return
+        fi
+
+        if [[ -z "${TMUX}" ]]; then
+            printf "\033]1337;SetUserVar=%s=%s\007" "$1" "$(echo -n "$2" | base64)"
+        else
+            # <https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it>
+            # Note that you ALSO need to add "set -g allow-passthrough on" to your tmux.conf
+            printf "\033Ptmux;\033\033]1337;SetUserVar=%s=%s\007\033\\" "$1" "$(echo -n "$2" | base64)"
+        fi
+    }
+
+    export -f __wezterm_set_user_var
+    complete -W "" __wezterm_set_user_var
+
+    function _run_prog() {
+        # set PROG to the program being run
+        __wezterm_set_user_var "PROG" "$1"
+
+        # arrange to clear it when it is done
+        trap '__wezterm_set_user_var PROG ""' EXIT
+
+        # and now run the corresponding command, taking care to avoid looping
+        # with the alias definition
+        command "$@"
+    }
+    export -f _run_prog
+    complete -cf _run_prog
+fi
+
+if which 'emacs' &> /dev/null; then
+    function emacs() {
+        if ! which 'emacs' &> /dev/null; then
+            error "\`emacs\` not found in PATH"
+            return 1
+        fi
+
+        command emacs "$@" &> /dev/null &
+        return 0
+    }
+    export -f emacs
+fi
+
+if which 'steam' &> /dev/null; then
+    function steam() {
+        if ! which 'steam' &> /dev/null; then
+            error "\`steam\` not found in PATH"
+            return 1
+        fi
+
+        if _cmd 'prime-run'; then
+            prime-run command steam "$@" &> /dev/null &
+        else
+            command steam "$@" &> /dev/null &
+        fi
+
+        return 0
+    }
+    export -f steam
+fi
+
+if which 'obs' &> /dev/null; then
+    function obs() {
+        if _cmd 'prime-run'; then
+            prime-run command obs "$@" &> /dev/null &
+        else
+            command obs "$@" &> /dev/null &
+        fi
+
+        return 0
+    }
+    export -f obs
+fi
+
+if which 'kgpg' &> /dev/null; then
+    function kgpg() {
+        command kgpg "$@" &> /dev/null &
+
+        return 0
+    }
+fi
+
+# vim:ft=bash:ts=4:sts=4:sw=4:et:ai:si:sta:noci:nopi:

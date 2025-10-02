@@ -1,0 +1,4 @@
+json=true
+browser=false
+prefix=~/.local
+foreground-scripts=true

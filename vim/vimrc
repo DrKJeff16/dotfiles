@@ -1,0 +1,595 @@
+scriptencoding utf-8
+
+set nocompatible helplang=en nospell
+
+nnoremap <silent> <Space> <Nop>
+vnoremap <silent> <Space> <Nop>
+let g:mapleader      = ' '
+let g:maplocalleader = ' '
+
+let g:loaded_netrw       = 1
+let g:loaded_netrwPlugin = 1
+
+set backspace=indent,eol,start
+set enc=utf-8
+
+set hid
+set splitright splitbelow equalalways
+set mouse=
+set timeout timeoutlen=500
+
+set bg=dark
+
+" Install vim-plug if not found
+if empty(glob('~/.vim/autoload/plug.vim'))
+    silent! !curl -fLo ~/.vim/autoload/plug.vim --create-dirs
+                \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+endif
+
+" Run PlugInstall if there are missing plugins
+au VimEnter * if len(filter(values(g:plugs), '!isdirectory(v:val.dir)'))
+            \ | PlugInstall --sync | source $MYVIMRC
+            \ | endif
+
+function! s:plug_doc()
+    let name = matchstr(getline('.'), '^- \zs\S\+\ze:')
+    if has_key(g:plugs, name)
+        for doc in split(globpath(g:plugs[name].dir, 'doc/*.txt'), '\n')
+            execute 'tabe' doc
+        endfor
+    endif
+endfunction
+
+augroup PlugHelp
+    au!
+    au FileType vim-plug nnoremap <buffer> <silent> H :call <SID>plug_doc()<CR>
+augroup END
+
+call plug#begin()
+Plug 'vim-scripts/L9'
+Plug 'vim-scripts/UTL.vim', { 'as': 'UTL' }
+
+Plug 'liuchengxu/vim-which-key', { 'as': 'WhichKey' }
+
+Plug 'vim-scripts/Auto-Pairs'
+Plug 'junegunn/vim-easy-align', { 'as': 'EasyAlign' }
+
+if executable('rustc')
+    Plug 'rust-lang/rust.vim', { 'as': 'rust' }
+endif
+
+Plug 'itchyny/lightline.vim', { 'as': 'LightLine' }
+Plug 'preservim/nerdtree', { 'as': 'NERDTree' } | Plug 'ryanoasis/vim-devicons', { 'as': 'DevIcons' }
+
+Plug 'mattn/emmet-vim', { 'as': 'Emmet' }
+
+Plug 'pineapplegiant/spaceduck'
+Plug 'dracula/vim', { 'as': 'dracula' }
+Plug 'liuchengxu/space-vim-dark'
+Plug 'tomasr/molokai'
+Plug 'colepeters/spacemacs-theme.vim', { 'as': 'spacemacs' }
+Plug 'joshdick/onedark.vim', { 'as': 'OneDark' }
+
+Plug 'tpope/vim-sensible'
+Plug 'tpope/vim-commentary'
+Plug 'tpope/vim-markdown'
+Plug 'tpope/vim-endwise'
+
+if executable('doxygen')
+    Plug 'vim-scripts/DoxygenToolkit.vim', { 'as': 'DoxygenToolkit' }
+endif
+
+Plug 'Townk/vim-autoclose', { 'as': 'autoclose' }
+
+Plug 'prabirshrestha/asyncomplete.vim' | Plug 'prabirshrestha/async.vim'
+Plug 'prabirshrestha/asyncomplete-lsp.vim' | Plug 'prabirshrestha/vim-lsp' | Plug 'mattn/vim-lsp-settings'
+Plug 'prabirshrestha/asyncomplete-buffer.vim'
+Plug 'prabirshrestha/asyncomplete-file.vim'
+
+if executable('zsh')
+    Plug 'yuys13/asyncomplete-zsh.vim'
+endif
+
+if executable('git')
+    Plug 'laixintao/asyncomplete-gitcommit'
+    Plug 'tpope/vim-fugitive'
+    Plug 'airblade/vim-gitgutter', { 'as': 'GitGutter' }
+endif
+
+if executable('clang')
+    Plug 'keremc/asyncomplete-clang.vim'
+endif
+
+Plug 'prabirshrestha/asyncomplete-necovim.vim' | Plug 'Shougo/neco-vim'
+
+" ATTENTION: Plug's closed
+call plug#end()
+
+packadd nohlsearch
+
+set nowrap
+set formatoptions=jqnl
+set smartcase noignorecase
+
+set nu signcolumn=yes nornu
+" set omnifunc=syntaxcomplete#Complete
+set completeopt=menu,menuone,noinsert,noselect,preview
+
+set noerrorbells novisualbell t_vb= belloff=all
+
+set wildmenu showcmd
+set title ru ls=2 stal=2 noshowmode
+set ar confirm
+set hlsearch incsearch showmatch
+set ts=4 sts=4 sw=4 et
+set ai si sta noci nopi
+
+if !has('gui_running')
+    set t_Co=256
+endif
+
+if exists('+termguicolors')
+    set tgc
+endif
+
+" silent! colorscheme spaceduck
+" silent! colorscheme dracula
+" silent! colorscheme space-vim-dark
+" silent! colorscheme molokai
+silent! colorscheme onedark
+
+tnoremap <silent> <Esc> <C-\><C-n>
+
+nnoremap <silent> <leader> :WhichKey '<Space>'<CR>
+nnoremap <silent> <localleader> :WhichKey '<Space>'<CR>
+
+let g:lightline = {
+            \ 'colorscheme': 'spaceduck',
+            \ }
+
+au! CompleteDone * if pumvisible() == 0 | pclose | endif
+
+inoremap <expr> <Tab>   pumvisible() ? "\<C-n>" : "\<Tab>"
+inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
+inoremap <expr> <CR>    pumvisible() ? asyncomplete#close_popup() : "\<CR>"
+imap <C-Space> <Plug>(asyncomplete_force_refresh)
+
+let g:lsp_preview_float = 1
+let g:lsp_diagnostics_virtual_text_align = 'right' " Can be 'after', 'right', 'below' (default) or 'above'
+let g:lsp_inlay_hints_enabled = 1
+let g:lsp_inlay_hints_mode = {
+            \   'normal': ['curline'],
+            \ }
+let g:lsp_fold_enabled = 0
+let g:lsp_semantic_enabled = 1
+let g:lsp_untitled_buffer_enabled = 0
+let g:lsp_diagnostics_enabled = 1
+let g:lsp_diagnostics_float_cursor = 1
+let g:lsp_settings_root_markers = [
+            \   '.bzr',
+            \   '.git',
+            \   '.git/',
+            \   '.hg',
+            \   '.luarc.json',
+            \   '.neoconf.json',
+            \   '.svn',
+            \   'LICENSE',
+            \   'neoconf.json',
+            \   'pyproject.toml',
+            \   'Pipenv',
+            \   'Pipenv.lock',
+            \ ]
+let g:lsp_settings = {
+            \   'pylsp-all': {
+            \     'workspace_config': {
+            \       'pylsp': {
+            \         'configurationSources': ['flake8']
+            \       },
+            \     },
+            \   },
+            \ }
+
+function! s:check_back_space() abort
+    let col = col('.') - 1
+    return !col || getline('.')[col - 1]  =~ '\s'
+endfunction
+
+if executable('pylsp')
+    au User lsp_setup call lsp#register_server({
+                \ 'name': 'pylsp',
+                \ 'cmd': {server_info->['pylsp']},
+                \ 'allowlist': ['python'],
+                \ 'workspace_config': {
+                \   'pylsp': {
+                \     'plugins': {
+                \       'pycodestyle': {
+                \         'enabled': v:false,
+                \       },
+                \     },
+                \   },
+                \  },
+                \ })
+endif
+
+if executable('lua-language-server')
+    let g:vim_lsp_settings_lua_language_server_workspace_config = {
+                \  'Lua': {
+                \    'color': {
+                \      'mode': 'Semantic',
+                \    },
+                \    'completion': {
+                \      'callSnippet': 'Replace',
+                \      'displayContext': 20,
+                \      'showParams': v:true,
+                \      'showWord': 'Fallback',
+                \      'enable': v:true,
+                \      'keywordSnippet': 'Replace',
+                \    },
+                \    'diagnostics': {
+                \      'enable': v:true,
+                \      'globals': [
+                \          'vim',
+                \      ],
+                \      'ignoredFiles': 'Opened',
+                \      'workspaceEvent': 'OnChanged',
+                \    },
+                \    'hint': {
+                \      'arrayIndex': 'Enable',
+                \      'enable': v:true,
+                \      'setType': v:false,
+                \    },
+                \    'runtime': {
+                \      'builtin': {
+                \        'basic': 'default',
+                \        'bit': 'default',
+                \        'bit32': 'default',
+                \        'builtin': 'default',
+                \        'coroutine': 'default',
+                \        'debug': 'default',
+                \        'ffi': 'default',
+                \        'io': 'default',
+                \        'jit': 'default',
+                \        'math': 'default',
+                \        'os': 'default',
+                \        'package': 'default',
+                \        'string': 'default',
+                \        'table': 'default',
+                \        'table.clear': 'default',
+                \        'table.new': 'default',
+                \        'utf8': 'default',
+                \      },
+                \      'path': ['?.lua', '?/init.lua'],
+                \      'version': 'LuaJIT',
+                \      'pathStrict': v:false,
+                \    },
+                \    'hover': {
+                \      'enable': v:true,
+                \      'viewNumber': v:true,
+                \      'viewString': v:true,
+                \      'viewStringMax': 1000
+                \    },
+                \    'semantic': {
+                \      'enable': v:true,
+                \      'annotation': v:true,
+                \      'keyword': v:true,
+                \      'variable': v:true,
+                \    },
+                \    'signatureHelp': {
+                \      'enable': v:true,
+                \    },
+                \    'workspace': {
+                \      'ignoreDir': [],
+                \      'library': [
+                \        '/usr/local/share/nvim/runtime/lua',
+                \        '/usr/share/nvim/runtime/lua',
+                \        '~/.local/share/nvim/lazy',
+                \        '${3rd}/luv/library',
+                \      ],
+                \      'maxPreload': 1000,
+                \      'preloadFileSize': 100,
+                \      'useGitIgnore': v:true
+                \    }
+                \  }
+                \}
+    au User lsp_setup call lsp#register_server({
+                \     'name': 'lua-language-server',
+                \     'cmd': {server_info->lsp_settings#get('lua-language-server', 'cmd', [lsp_settings#exec_path('lua-language-server')]+lsp_settings#get('lua-language-server', 'args', []))},
+                \     'root_uri':{server_info->lsp_settings#get('lua-language-server', 'root_uri', lsp_settings#root_uri('lua-language-server'))},
+                \     'initialization_options': lsp_settings#get('lua-language-server', 'initialization_options', v:null),
+                \     'allowlist': lsp_settings#get('lua-language-server', 'allowlist', ['lua']),
+                \     'blocklist': lsp_settings#get('lua-language-server', 'blocklist', []),
+                \     'config': lsp_settings#get('lua-language-server', 'config', lsp_settings#server_config('lua-language-server')),
+                \     'workspace_config': lsp_settings#get('lua-language-server', 'workspace_config', g:vim_lsp_settings_lua_language_server_workspace_config),
+                \     'semantic_highlight': lsp_settings#get('lua-language-server', 'semantic_highlight', {}),
+                \ })
+endif
+
+au User asyncomplete_setup call asyncomplete#register_source(
+            \ asyncomplete#sources#necovim#get_source_options({
+            \     'name': 'necovim',
+            \     'allowlist': ['vim'],
+            \     'completor': function('asyncomplete#sources#necovim#completor'),
+            \ }))
+
+au User asyncomplete_setup call asyncomplete#register_source(asyncomplete#sources#buffer#get_source_options({
+            \     'name': 'buffer',
+            \     'allowlist': ['*'],
+            \     'completor': function('asyncomplete#sources#buffer#completor'),
+            \     'config': {
+            \        'max_buffer_size': 5000000,
+            \     },
+            \ }))
+
+au User asyncomplete_setup call asyncomplete#register_source(asyncomplete#sources#file#get_source_options({
+            \     'name': 'file',
+            \     'allowlist': ['*'],
+            \     'priority': 10,
+            \     'completor': function('asyncomplete#sources#file#completor')
+            \ }))
+
+let g:asyncomplete_buffer_clear_cache = 1
+
+if executable('clang')
+    au User asyncomplete_setup call asyncomplete#register_source(
+                \ asyncomplete#sources#clang#get_source_options({
+                \     'config': {
+                \         'clang_path': '/usr/bin/clang',
+                \     }
+                \ }))
+endif
+
+if executable('vscode-html-languageserver')
+    au User lsp_setup call lsp#register_server({
+                \     'name': 'html-languageserver',
+                \     'cmd': {server_info->[&shell, &shellcmdflag, 'vscode-html-languageserver --stdio']},
+                \     'whitelist': ['html'],
+                \ })
+endif
+if executable('vscode-css-languageserver')
+    au User lsp_setup call lsp#register_server({
+                \     'name': 'css-languageserver',
+                \     'cmd': {server_info->[&shell, &shellcmdflag, 'vscode-css-languageserver --stdio']},
+                \     'whitelist': ['css', 'less', 'sass'],
+                \ })
+endif
+
+if executable('bash-language-server')
+    augroup LspBash
+        au!
+        au User lsp_setup call lsp#register_server({
+                    \     'name': 'bash-language-server',
+                    \     'cmd': {server_info->[&shell, &shellcmdflag, 'bash-language-server start']},
+                    \     'allowlist': ['sh', 'bash'],
+                    \ })
+    augroup END
+endif
+
+au User asyncomplete_setup call asyncomplete#register_source({
+            \     'name': 'gitcommit',
+            \     'whitelist': ['gitcommit'],
+            \     'priority': 10,
+            \     'completor': function('asyncomplete#sources#gitcommit#completor')
+            \ })
+
+au User asyncomplete_setup call asyncomplete#register_source({
+            \     'name': 'zsh',
+            \     'allowlist': ['zsh'],
+            \     'triggers': {'*': ['-']},
+            \     'completor': function('asyncomplete#sources#zsh#completor')
+            \ })
+
+function! s:on_lsp_buffer_enabled() abort
+    setlocal omnifunc=lsp#complete
+    setlocal signcolumn=yes
+    if exists('+tagfunc') | setlocal tagfunc=lsp#tagfunc | endif
+    nmap <buffer> gd <plug>(lsp-definition)
+    nmap <buffer> gs <plug>(lsp-document-symbol-search)
+    nmap <buffer> gS <plug>(lsp-workspace-symbol-search)
+    nmap <buffer> gr <plug>(lsp-references)
+    nmap <buffer> gi <plug>(lsp-implementation)
+    nmap <buffer> gt <plug>(lsp-type-definition)
+    nmap <buffer> <leader>rn <plug>(lsp-rename)
+    nmap <buffer> [g <plug>(lsp-previous-diagnostic)
+    nmap <buffer> ]g <plug>(lsp-next-diagnostic)
+    nmap <buffer> K <plug>(lsp-hover)
+    nnoremap <buffer> <expr><c-f> lsp#scroll(+4)
+    nnoremap <buffer> <expr><c-d> lsp#scroll(-4)
+
+    let g:lsp_format_sync_timeout = 1250
+    au! BufWritePre *.rs,*.go,*.lua,.vimrc,*.vim call execute('LspDocumentFormatSync')
+
+    " refer to doc to add more commands
+endfunction
+
+augroup lsp_install
+    au!
+    " call s:on_lsp_buffer_enabled only for languages that has the server registered.
+    au User lsp_buffer_enabled call s:on_lsp_buffer_enabled()
+augroup END
+
+let g:user_emmet_mode='n'    "only enable normal mode functions.
+let g:user_emmet_leader_key='<Space>'
+let g:user_emmet_install_global = 0
+au FileType html,css,scss,less EmmetInstall
+
+let g:airline_theme = 'onedark'
+
+" Keymaps go here
+nnoremap <leader>/ :%s/
+
+nnoremap <silent> <leader>fs :w<CR>
+nnoremap <leader>fS :w 
+nnoremap <silent> <leader>qq <CMD>qa<CR>
+nnoremap <silent> <leader>qQ <CMD>qa!<CR>
+
+nnoremap <silent> <leader>fvs :so $MYVIMRC<CR>
+nnoremap <silent> <leader>fvv :so %<CR>
+nnoremap <silent> <leader>fvet <CMD>tabnew $MYVIMRC<CR>
+nnoremap <silent> <leader>fvee <CMD>ed $MYVIMRC<CR>
+nnoremap <silent> <leader>fves <CMD>split $MYVIMRC<CR>
+nnoremap <silent> <leader>fvev <CMD>vsplit $MYVIMRC<CR>
+
+nnoremap <silent> <leader>bd <CMD>bdel<CR>
+nnoremap <silent> <leader>bD <CMD>bdel!<CR>
+nnoremap <silent> <leader>bn <CMD>bNext<CR>
+nnoremap <silent> <leader>bp <CMD>bprev<CR>
+
+nnoremap <silent> <leader>td <CMD>tabclose<CR>
+nnoremap <silent> <leader>tD <CMD>tabclose!<CR>
+nnoremap <silent> <leader>tn <CMD>tabNext<CR>
+nnoremap <silent> <leader>tp <CMD>tabprev<CR>
+nnoremap <leader>ta :tabnew 
+nnoremap <silent> <leader>tA <CMD>tabnew<CR>
+
+nnoremap <silent> <leader>ftt <CMD>NERDTreeFocus<CR>
+nnoremap <silent> <leader>ftq <CMD>NERDTreeClose<CR>
+
+nnoremap <silent> <leader>fir :retab<CR>
+nnoremap <silent> <leader>fiR :retab!<CR>
+
+nnoremap <silent> <leader>Pu <CMD>PlugUpdate<CR>
+nnoremap <silent> <leader>PU <CMD>PlugUpgrade<CR>
+nnoremap <silent> <leader>Pc <CMD>PlugClean!<CR>
+nnoremap <silent> <leader>Pi <CMD>PlugInstall<CR>
+
+nnoremap <silent> <leader>wn <CMD>wincmd w<CR>
+nnoremap <silent> <leader>wp <CMD>wincmd p<CR>
+nnoremap <silent> <leader>w= <CMD>wincmd =<CR>
+nnoremap <silent> <leader>w+ <CMD>wincmd +<CR>
+nnoremap <silent> <leader>w- <CMD>wincmd -<CR>
+nnoremap <silent> <leader>wd <CMD>wincmd q<CR>
+
+" Sorting
+vnoremap <silent> <leader>s :sort<CR>
+vnoremap <silent> <leader>S :sort!<CR>
+
+let s:paren_hl_on = 0
+function s:Highlight_Matching_Paren()
+    if s:paren_hl_on
+        match none
+        let s:paren_hl_on = 0
+    endif
+
+    let c_lnum = line('.')
+    let c_col = col('.')
+
+    let c = getline(c_lnum)[c_col - 1]
+    let plist = split(&matchpairs, ':\|,')
+    let i = index(plist, c)
+    if i < 0
+        return
+    endif
+    if i % 2 == 0
+        let s_flags = 'nW'
+        let c2 = plist[i + 1]
+    else
+        let s_flags = 'nbW'
+        let c2 = c
+        let c = plist[i - 1]
+    endif
+    if c == '['
+        let c = '\['
+        let c2 = '\]'
+    endif
+    let s_skip ='synIDattr(synID(line("."), col("."), 0), "name") ' ..
+                \ '=~?  "string\\|comment"'
+    execute 'if' s_skip '| let s_skip = 0 | endif'
+
+    let [m_lnum, m_col] = searchpairpos(c, '', c2, s_flags, s_skip)
+
+    if m_lnum > 0 && m_lnum >= line('w0') && m_lnum <= line('w$')
+        exe 'match Search /\(\%' .. c_lnum .. 'l\%' .. c_col ..
+                    \ 'c\)\|\(\%' .. m_lnum .. 'l\%' .. m_col .. 'c\)/'
+        let s:paren_hl_on = 1
+    endif
+endfunction
+
+au CursorMoved,CursorMovedI * call s:Highlight_Matching_Paren()
+au InsertEnter * match none
+
+let g:which_key_centered = 1
+let g:which_key_display_names = {
+            \   ' ': 'SPC',
+            \   '<Esc>': 'ESC',
+            \   '<CR>': 'RET',
+            \   '<BS>': 'BS',
+            \   '<C-H>': 'BS',
+            \   '<C-I>': 'TAB',
+            \   '<TAB>': 'TAB'
+            \ }
+
+let g:which_key_map_n = {}
+let g:which_key_map_n.b = {
+            \   'name': '+Buffer',
+            \   'n': [':bNext', 'Goto Next Buffer'],
+            \   'p': [':bprev', 'Goto Previous Buffer'],
+            \   'd': [':bd', 'Close Buffer'],
+            \   'D': [':bd!', 'Close Buffer Forcefully'],
+            \ }
+let g:which_key_map_n.f = {
+            \   'name': '+File',
+            \   'i': {
+            \     'name': '+File Indent',
+            \     'r': [':%retab', 'Retab Whole File'],
+            \     'R': [':%retab', 'Retab Whole File (Forcefully)'],
+            \   },
+            \   'r': 'Prompt Replace (Whole File)',
+            \   's': [':w', 'Save File'],
+            \   'S': 'Save File (Prompt)',
+            \   't': {
+            \     'name': '+NERDTree',
+            \     't': [':NERDTreeFocus', 'Focus NERDTree'],
+            \     'q': [':NERDTreeClose', 'Close NERDTree'],
+            \   },
+            \   'v': {
+            \     'name': '+VimScript',
+            \     's': [':so $VIMRC', 'Source $MYVIMRC'],
+            \     'v': [':so %', 'Source Current File As VimScript'],
+            \     'e': {
+            \       'name': '+Edit Vim Files',
+            \       'e': [':ed $MYVIMRC', 'Edit In Same Buffer'],
+            \       't': [':tabnew $MYVIMRC', 'Edit In New Tab'],
+            \       's': [':split $MYVIMRC', 'Edit In Horizontal Split'],
+            \       'v': [':vsplit $MYVIMRC', 'Edit In Vertical Split'],
+            \     },
+            \   },
+            \ }
+let g:which_key_map_n.q = {
+            \   'name': '+Quit',
+            \   'q': [':qa', 'Quit Vim'],
+            \   'Q': [':qa!', 'Quit Vim (Forcefully)'],
+            \ }
+let g:which_key_map_n.P = {
+            \   'name': '+Plugins',
+            \   'u': [':PlugUpdate', 'Update Plugins'],
+            \   'U': [':PlugUpgrade', 'Upgrade vim-plug'],
+            \   'i': [':PlugInstall', 'Install Plugins'],
+            \   'c': [':PlugClean!', 'Clean Unused Plugins'],
+            \ }
+let g:which_key_map_n.t = {
+            \   'name': '+Tabs',
+            \   'A': [':tabnew', 'Open New Tab'],
+            \   'a': 'Open New Tab (Prompt)',
+            \   'D': [':tabc!', 'Close Tab Forcefully'],
+            \   'd': [':tabc', 'Close Tab'],
+            \   'n': [':tabN', 'Goto Next Tab'],
+            \   'p': [':tabp', 'Goto Previous Tab'],
+            \ }
+let g:which_key_map_n.w = {
+            \   'name': '+Window',
+            \   's': {
+            \      'name': '+Split',
+            \      's': 'Split Buffer Horizontally (Prompt)',
+            \      'v': 'Split Buffer Vertically (Prompt)',
+            \      'S': [':split', 'Split Buffer Horizontally'],
+            \      'V': [':vsplit', 'Split Buffer Vertically'],
+            \      'n': [':wincmd w', 'Switch To Next Window'],
+            \   },
+            \ }
+call which_key#register(' ', 'g:which_key_map_n', 'n')
+
+hi default link WhichKey          Function
+hi default link WhichKeyGroup     Keyword
+hi default link WhichKeyDesc      Identifier
+hi default link WhichKeyFloating  Pmenu
+hi default link WhichKeySeperator DiffAdded
