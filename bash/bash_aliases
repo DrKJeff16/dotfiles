@@ -256,8 +256,11 @@ if _cmd 'python3'; then
 
     _cmd '__pip_alias' && __pip_alias
 elif _cmd 'python'; then
-    __simple_alias python 'python -q '
-    __alias_complete_alias python3 'python '
+    __simple_alias python \
+        'python -q '
+
+    __alias_complete_alias \
+        python3 'python '
 
     _cmd '__pip_alias' && __pip_alias
 fi
@@ -289,7 +292,13 @@ if ! [[ -z ${DOC_D+X} ]] && ! _cmd 'godocs'; then
 
 fi
 
-if [[ -d "$HOME/Downloads" ]] && ! _cmd 'godwd'; then
+if [[ -d "$HOME/Pictures" ]]; then
+    __alias_no_complete\
+        gopic 'pd "$HOME/Pictures"'
+
+fi
+
+if [[ -d "$HOME/Downloads" ]]; then
     __alias_no_complete\
         godwd 'pd "$HOME/Downloads"'
 
@@ -480,5 +489,4 @@ if _cmd '__wezterm_set_user_var' '_run_prog'; then
         'vim' vim '_run_prog vim'
 
 fi
-
-# vim:ft=sh:ts=4:sts=4:sw=4:et:ai:si:sta:noci:nopi:
+# vim:ft=sh:ts=4:sts=4:sw=4:et:ai:si:sta:

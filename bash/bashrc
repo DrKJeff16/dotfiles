@@ -1,15 +1,13 @@
 #
 # ~/.bashrc
 #
-
-# shellcheck shell=bash disable=SC2237,SC2016 enable=require-double-brackets
+# shellcheck shell=bash disable=SC2237,SC2016,SC2046 enable=require-double-brackets
 
 # set -x
 
-set -o noclobber
+unset LC_COLLATE # STOP MESSING WITH MY `ls` OUTPUT!
 
-# STOP MESSING WITH MY `ls` OUTPUT
-unset LC_COLLATE
+set -o noclobber
 
 export HISTCONTROL="erasedups:ignoreboth"
 export HISTFILESIZE=32500
@@ -24,7 +22,6 @@ shopt -s expand_aliases
 [[ -d "$HOME/Templates" ]] && export TEMPLD="$HOME/Templates"
 
 export FUNCFILE="$HOME/.bash_functions"
-
 if [[ -f "$FUNCFILE" ]] && [[ -r "$FUNCFILE" ]]; then
     # shellcheck source=./.bash_functions
     . "$FUNCFILE"
@@ -43,8 +40,6 @@ for D in "${PATHS[@]}"; do
     __append2path "$D"
 done
 unset PATHS D
-
-export ALIASFILE="$HOME/.bash_aliases"
 
 if [[ -d "$ENVD" ]]; then
     for F in "$ENVD"/*; do
@@ -92,7 +87,6 @@ PAGER='more'
 if _cmd 'less'; then
     PAGER='less'
     export LESS='-R --use-color -Dd+g$Du+r$'
-
 fi
 export PAGER
 
@@ -103,7 +97,6 @@ if _cmd 'man'; then
     [[ -d /usr/share/man ]] && MANPATH="/usr/share/man:$MANPATH"
     [[ -d /usr/local/man ]] && MANPATH="/usr/local/man:$MANPATH"
     [[ -d /usr/local/share/man ]] && MANPATH="/usr/local/share/man:$MANPATH"
-
     export MANPATH
 fi
 
@@ -117,13 +110,13 @@ for F in "${SRCF[@]}"; do
 done
 unset SRCF F
 
+export ALIASFILE="$HOME/.bash_aliases"
 if [[ -f "$ALIASFILE" ]] && [[ -r "$ALIASFILE" ]]; then
     # shellcheck source=./.bash_aliases
     . "$ALIASFILE"
 fi
 
 [[ -f "$HOME/.bash_completion" ]] && export COMPFILE="$HOME/.bash_completion"
-
 if [[ -f "$COMPFILE" ]] && [[ -r "$COMPFILE" ]]; then
     # shellcheck source=./.bash_completion
     . "$COMPFILE"
@@ -135,15 +128,10 @@ _cmd 'dbus-launch' && export $(dbus-launch)
 
 # From here on, load the rest if in an interactive shell
 [[ $- != *i* ]] && return
-
 shopt -s checkwinsize
+export LINES COLUMNS # Export interactive shell dimensions
 
-_cmd 'filter_histfile' && filter_histfile
-
-# __append2var "XDG_CONFIG_DIRS" "$HOME/.config"
-
-# Export interactive shell dimensions
-export LINES COLUMNS
+_cmd 'filter_histfile' && filter_histfile # Filter history, dedup it
 
 case ${TERM} in
     xterm* | rxvt* | Eterm | aterm | kterm | gnome* | st* | tmux*)
@@ -161,3 +149,4 @@ export GPG_TTY
 gpg-connect-agent updatestartuptty /bye > /dev/null
 
 # set +x
+# vim:ft=bash:ts=4:sts=4:sw=4:et:ai:si:sta:

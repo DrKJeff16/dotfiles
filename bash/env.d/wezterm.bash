@@ -9,7 +9,6 @@ if ! _cmd 'wezterm'; then
 fi
 
 export WEZTERM_D="${HOME}/.config/wezterm"
-
 if [[ -r "${WEZTERM_D}/wezterm.lua" ]]; then
     export WEZTERMRC="${WEZTERM_D}/wezterm.lua"
 elif [[ -r "${HOME}/.wezterm.lua" ]]; then
@@ -17,6 +16,27 @@ elif [[ -r "${HOME}/.wezterm.lua" ]]; then
 fi
 
 __cond_src /etc/profile.d/wezterm.sh
+
+__wezterm_set_user_var() {
+    if ! hash base64 2> /dev/null; then
+        return
+    fi
+    if [[ -z "${TMUX}" ]]; then
+        printf "\033]1337;SetUserVar=%s=%s\007" "$1" "$(echo -n "$2" | base64)"
+    else
+        printf "\033Ptmux;\033\033]1337;SetUserVar=%s=%s\007\033\\" "$1" "$(echo -n "$2" | base64)"
+    fi
+}
+export -f __wezterm_set_user_var
+complete -W "" __wezterm_set_user_var
+
+_run_prog() {
+    __wezterm_set_user_var "PROG" "$1"
+    trap '__wezterm_set_user_var PROG ""' EXIT
+    command "$@"
+}
+export -f _run_prog
+complete -cf _run_prog
 
 _wezterm() {
     local i cur prev opts cmd
