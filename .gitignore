@@ -1,13 +1,3 @@
-# Lazy Lock File
-lazy-lock.json
-
-# FALLBACK INIT (for bug reporting)
-fallback.lua
-repro.lua
-minimal_init.lua
-rtp.lua
-.repro/
-
 # Deprecated / Dropped stuff
 .deprecated/
 
@@ -58,3 +48,6 @@ patches/
 *.old
 *.pacnew
 *.pacsave
+
+.*_history
+*_history
