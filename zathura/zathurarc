@@ -1,0 +1,42 @@
+include tokyonight_storm.zathurarc
+
+set selection-clipboard clipboard
+
+# Zathura configuration file
+# See man `man zathurarc'
+
+# Open document in fit-width mode by default
+set adjust-open "best-fit"
+
+# One page per row by default
+set pages-per-row 1
+
+#stop at page boundries
+set scroll-page-aware "true"
+set scroll-full-overlap 0.01
+set scroll-step 100
+
+#zoom settings
+set zoom-min 10
+
+#guioptions - Shows or hides GUI elements.
+#If it contains 'c', the command line is displayed.
+#If it contains 's', the statusbar is displayed.
+#If it contains 'h', the horizontal scrollbar is displayed.
+#If it contains 'v', the vertical scrollbar is displayed.
+set guioptions "sv"
+
+# zathurarc-dark
+
+set font "FiraCode Nerdo Font Mono 15"
+
+set render-loading "false"
+set scroll-step 50
+unmap f
+map f toggle_fullscreen
+map [fullscreen] f toggle_fullscreen
+
+map <C-i> zoom in
+map <C-o> zoom out
+
+set guioptions "sc"
