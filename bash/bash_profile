@@ -1,11 +1,12 @@
 #
 # ~/.bash_profile
 #
-# shellcheck shell=bash disable=SC2237,SC2016,SC2046 enable=require-double-brackets
+# shellcheck shell=bash disable=SC1091,SC2237,SC2016,SC2046 enable=require-double-brackets
 
 [[ "$XDG_SESSION_TYPE" = "wayland" ]] && export MOZ_ENABLE_WAYLAND=1
+[[ -f "/home/drjeff16/.local/share/bob/env/env.sh" ]] && . "/home/drjeff16/.local/share/bob/env/env.sh"
 if [[ -f "$HOME/.bashrc" ]]; then
-    . "$HOME/.bashrc"
+    . "$HOME/.bashrc" || printf "BAD SOURCING!\n" > /dev/null
 fi
 
 # vim:ft=bash:ts=4:sts=4:sw=4:et:ai:si:sta:

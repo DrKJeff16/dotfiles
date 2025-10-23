@@ -48,9 +48,7 @@ if [[ -d "$ENVD" ]]; then
     unset F
 fi
 
-if [[ -d "$HOME/Documents" ]]; then
-    export DOC_D="$HOME/Documents"
-fi
+[[ -d "$HOME/Documents" ]] && export DOC_D="$HOME/Documents"
 
 EDITOR='nano'
 VISUAL='nano'
@@ -77,6 +75,7 @@ if _cmd 'nvim'; then
     export NVIM_CFG="$CONFD/nvim"
     export NVIM_CFG_LUA="$NVIM_CFG/lua"
     export NVIMRC="$NVIM_CFG/init.lua"
+    export MANPAGER='nvim +Man!'
 
     EDITOR='nvim'
     VISUAL='nvim'
@@ -91,13 +90,16 @@ fi
 export PAGER
 
 if _cmd 'man'; then
-    export MANPAGER="less -R --use-color -Dd+g -Du+r" MANROFFOPT="-P -c"
+    if [[ -z ${MANPAGER+X} ]]; then
+        export MANPAGER="less -R --use-color -Dd+g -Du+r"
+    fi
     MANPATH=""
     [[ -d /usr/man ]] && MANPATH="/usr/man:$MANPATH"
     [[ -d /usr/share/man ]] && MANPATH="/usr/share/man:$MANPATH"
     [[ -d /usr/local/man ]] && MANPATH="/usr/local/man:$MANPATH"
     [[ -d /usr/local/share/man ]] && MANPATH="/usr/local/share/man:$MANPATH"
     export MANPATH
+    export MANROFFOPT="-P -c"
 fi
 
 SRCF=(
@@ -108,7 +110,8 @@ SRCF=(
 for F in "${SRCF[@]}"; do
     __cond_src "$F"
 done
-unset SRCF F
+unset SRCF
+unset F
 
 export ALIASFILE="$HOME/.bash_aliases"
 if [[ -f "$ALIASFILE" ]] && [[ -r "$ALIASFILE" ]]; then
@@ -146,7 +149,8 @@ export HISTSIZE=32500
 
 GPG_TTY="$(tty)"
 export GPG_TTY
-gpg-connect-agent updatestartuptty /bye > /dev/null
+
+gpg-connect-agent updatestartuptty /bye &> /dev/null
 
 # set +x
-# vim:ft=bash:ts=4:sts=4:sw=4:et:ai:si:sta:
+# vim:ft=bash:ts=4:sts=4:sw=4:et:

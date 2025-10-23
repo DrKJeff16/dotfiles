@@ -219,7 +219,7 @@ __alias_no_complete \
 
 if _cmd 'lsd'; then
     __alias_complete_alias \
-        tree 'lsd --tree'
+        tree 'lsd --tree '
 
 elif _cmd 'tree'; then
     __alias_complete_alias \
@@ -236,16 +236,13 @@ fi
 [[ -d "$HOME/.bin" ]] \
     && __alias_no_complete goals 'pd "$HOME/.bin"'
 
-[[ -d "$HOME/.bin/cbin/.source" ]] \
-    && __alias_no_complete go2c 'pd "$HOME/.bin/cbin/.source"'
-
 __cmd_alias \
-    'batman' man 'batman' \
     'delta' delta "delta --hyperlinks --hyperlinks-file-link-format='file://{path}#{line}'" \
     'ffmpeg' ffmpeg 'ffmpeg -hide_banner' \
     'ffprobe' ffprobe 'ffprobe -hide_banner' \
-    'lsd' lsd 'lsd --color=auto -h' \
+    'lsd' lsd 'lsd --color=auto -h -X' \
     'luacheck' luacheck 'luacheck -q --codes' \
+    'nvim' nvi 'nvim' \
     'rg' rg 'rg --hyperlink-format=kitty' \
     'yt-dlp' yt-dlp 'yt-dlp --prefer-free-formats --prefer-ffmpeg'
 
