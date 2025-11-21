@@ -328,18 +328,28 @@ complete -W "" _yn
 up() {
     local N=1
     local MAX_LOOP=100
+    local DIR_ACCESS=0
     if [[ $# -eq 0 ]]; then
         N=1
     elif [[ "$1" =~ ^[1-9][0-9]*$ ]]; then
         N="$1"
-    elif [[ "$1" =~ ^(-?0|-[1-9][0-9]*)$ ]]; then
-        N="$1"
+    elif [[ "$1" =~ ^(0|-[1-9][0-9]*)$ ]]; then
         error "Refusing to ascend \`$(tput bold)$(tput setaf 1)${N}$(tput sgr0)\` directories"
         return 127
-    else
+    elif [[ -d ../"$1" ]]; then
         N="$1"
-        error "Argument's not a number (\`${N}\`)"
+        DIR_ACCESS=1
+    else
+        error "Argument is valid (\`${N}\`)"
         return 127
+    fi
+
+    if [[ $DIR_ACCESS -eq 1 ]]; then
+        if ! cd ../"$1"; then
+            error "Failed to reach out"
+            return 1
+        fi
+        return 0
     fi
 
     while [[ $N -gt 0 ]] && [[ $MAX_LOOP -gt 0 ]]; do

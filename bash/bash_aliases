@@ -1,7 +1,6 @@
 #
 # ~/.bash_aliases
 #
-
 # shellcheck shell=bash disable=SC2237,SC2016,SC2236,2154 enable=require-double-brackets
 
 shopt -s progcomp_alias
@@ -56,9 +55,7 @@ if [[ "$(whoami)" != "root" ]] && [[ $UID -ne 0 ]]; then
             'reflector' upd_mirrors 'reflector -c US --latest 16 --protocol https -a 6 --sort rate --save /etc/pacman.d/mirrorlist'
 
         if ! _cmd 'bak_pkgs'; then
-            __alias_no_complete \
-                bak_pkgs 'pacman -Q | cut -d " " -f1 >| ~/.packages.list'
-
+            __alias_no_complete bak_pkgs 'pacman -Q | cut -d " " -f1 >| ~/.packages.list'
         fi
 
         __cmd_alias_complete_alias \
@@ -127,26 +124,24 @@ if [[ "$(whoami)" != "root" ]] && [[ $UID -ne 0 ]]; then
         'nvim' snvim 'sudo \nvim' \
         'vim' svim 'sudo \vim'
 
-else
-    if _cmd 'systemctl'; then
-        __alias_complete_alias \
-            srv 'systemctl' \
-            srv_Halt 'systemctl stop --now' \
-            srv_Off 'systemctl disable --now' \
-            srv_On 'systemctl enable --now' \
-            srv_Reload 'systemctl reload --now' \
-            srv_Restart 'systemctl restart --now' \
-            srv_Run 'systemctl start --now' \
-            srv_dreload 'systemctl daemon-reload' \
-            srv_halt 'systemctl stop' \
-            srv_help 'systemctl help' \
-            srv_off 'systemctl disable' \
-            srv_on 'systemctl enable' \
-            srv_restart 'systemctl restart' \
-            srv_run 'systemctl start' \
-            srv_status 'systemctl status'
+elif _cmd 'systemctl'; then
+    __alias_complete_alias \
+        srv 'systemctl' \
+        srv_Halt 'systemctl stop --now' \
+        srv_Off 'systemctl disable --now' \
+        srv_On 'systemctl enable --now' \
+        srv_Reload 'systemctl reload --now' \
+        srv_Restart 'systemctl restart --now' \
+        srv_Run 'systemctl start --now' \
+        srv_dreload 'systemctl daemon-reload' \
+        srv_halt 'systemctl stop' \
+        srv_help 'systemctl help' \
+        srv_off 'systemctl disable' \
+        srv_on 'systemctl enable' \
+        srv_restart 'systemctl restart' \
+        srv_run 'systemctl start' \
+        srv_status 'systemctl status'
 
-    fi
 fi
 
 __cmd_alias \
@@ -173,8 +168,7 @@ __simple_alias \
     rmdir 'rmdir -v' \
     umount 'umount -v'
 
-__cmd_alias_no_complete \
-    'shutdown' off 'shutdown -h now'
+__cmd_alias_no_complete 'shutdown' off 'shutdown -h now'
 
 __alias_complete_alias \
     egrep 'grep -E' \
@@ -218,23 +212,16 @@ __alias_no_complete \
     && __alias_no_complete nanorc 'nano "$NANORC"'
 
 if _cmd 'lsd'; then
-    __alias_complete_alias \
-        tree 'lsd --tree '
-
+    __alias_complete_alias tree 'lsd --tree '
 elif _cmd 'tree'; then
-    __alias_complete_alias \
-        tree 'tree -C'
-
+    __alias_complete_alias tree 'tree -C'
 fi
 
 if [[ -d "$CONFD" ]] && ! _cmd 'gocfg'; then
-    __alias_no_complete \
-        gocfg 'pd "$CONFD"'
-
+    __alias_no_complete gocfg 'pd "$CONFD"'
 fi
 
-[[ -d "$HOME/.bin" ]] \
-    && __alias_no_complete goals 'pd "$HOME/.bin"'
+[[ -d "$HOME/.bin" ]] && __alias_no_complete goals 'pd "$HOME/.bin"'
 
 __cmd_alias \
     'delta' delta "delta --hyperlinks --hyperlinks-file-link-format='file://{path}#{line}'" \
@@ -253,11 +240,8 @@ if _cmd 'python3'; then
 
     _cmd '__pip_alias' && __pip_alias
 elif _cmd 'python'; then
-    __simple_alias python \
-        'python -q '
-
-    __alias_complete_alias \
-        python3 'python '
+    __simple_alias python 'python -q '
+    __alias_complete_alias python3 'python '
 
     _cmd '__pip_alias' && __pip_alias
 fi
@@ -278,27 +262,19 @@ __cmd_alias_complete_alias \
 ! [[ -z ${ORGD+X} ]] && __alias_no_complete goorg 'pd "$ORGD"'
 
 if ! [[ -z ${PROJ_D+X} ]] && ! _cmd 'goproj'; then
-    __alias_no_complete \
-        goproj 'pd "$PROJ_D"'
-
+    __alias_no_complete goproj 'pd "$PROJ_D"'
 fi
 
 if ! [[ -z ${DOC_D+X} ]] && ! _cmd 'godocs'; then
-    __alias_no_complete \
-        godocs 'pd "$DOC_D"'
-
+    __alias_no_complete godocs 'pd "$DOC_D"'
 fi
 
 if [[ -d "$HOME/Pictures" ]]; then
-    __alias_no_complete\
-        gopic 'pd "$HOME/Pictures"'
-
+    __alias_no_complete gopic 'pd "$HOME/Pictures"'
 fi
 
 if [[ -d "$HOME/Downloads" ]]; then
-    __alias_no_complete\
-        godwd 'pd "$HOME/Downloads"'
-
+    __alias_no_complete godwd 'pd "$HOME/Downloads"'
 fi
 
 if _cmd 'git'; then
@@ -311,12 +287,14 @@ if _cmd 'git'; then
         gita 'git add' \
         gitap 'git add -p' \
         gitbr 'git branch' \
+        gitbrd 'git branch -D' \
         gitc 'git commit --signoff' \
         gitcfg 'git config' \
         gitcfg_g 'git config --global' \
         gitcfg_l 'git config --local' \
         gitchp 'git cherry-pick' \
         gitck 'git checkout' \
+        gitckb 'git checkout -b' \
         gitcm 'git commit -m' \
         gitd 'git diff' \
         gitds 'git diff --staged' \
@@ -331,6 +309,7 @@ if _cmd 'git'; then
         gitre 'git reset' \
         gitreh 'git reset --hard' \
         gitres 'git reset --soft' \
+        gitrpo 'git remote prune origin' \
         gitrs 'git restore --staged' \
         gits 'git status' \
         gitst 'git stage' \
@@ -371,9 +350,7 @@ if _cmd 'systemctl' && [[ "$USER" != "root" ]] && [[ $UID -ne 0 ]]; then
 fi
 
 if ! [[ -z ${NPMRC+X} ]]; then
-    __alias_no_complete \
-        npmrc '"$EDITOR" "$NPMRC"'
-
+    __alias_no_complete npmrc '"$EDITOR" "$NPMRC"'
 fi
 
 if ! [[ -z ${WAYBAR_CFG+X} ]] && ! [[ -z ${WAYBARRC+X} ]]; then
@@ -409,6 +386,7 @@ if ! [[ -z ${FOOT_CFG+X} ]] && ! [[ -z ${FOOTRC+X} ]]; then
         gofoot 'pd "$FOOT_CFG"'
 
 fi
+
 if ! [[ -z ${KITTY_CFG+X} ]] && ! [[ -z ${KITTYRC+X} ]]; then
     __alias_no_complete \
         edkitty '"$EDITOR" "$KITTYRC" +"cd $KITTY_CFG"' \
@@ -423,34 +401,23 @@ if ! [[ -z ${ALACRITTY_CFG+X} ]] && ! [[ -z ${ALACRITTYRC+X} ]]; then
 
 fi
 
-! [[ -z ${WEZTERM_D+X} ]] \
-    && __alias_no_complete gowezterm 'pd "$WEZTERM_D"'
+! [[ -z ${WEZTERM_D+X} ]] && __alias_no_complete gowezterm 'pd "$WEZTERM_D"'
+! [[ -z ${WEZTERMRC+X} ]] && __alias_no_complete edwezterm '"$EDITOR" "$WEZTERMRC"'
 
-! [[ -z ${WEZTERMRC+X} ]] \
-    && __alias_no_complete edwezterm '"$EDITOR" "$WEZTERMRC"'
-
-! [[ -z ${TEMPLD+X} ]] \
-    && __alias_no_complete gotmpl 'pd "$TEMPLD"'
+! [[ -z ${TEMPLD+X} ]] && __alias_no_complete gotmpl 'pd "$TEMPLD"'
 
 if [[ -f "$HOME/.config/clangd/config.yaml" ]]; then
-    __alias_no_complete \
-        edclangd '"$EDITOR" "$HOME/.config/clangd/config.yaml"'
-
+    __alias_no_complete edclangd '"$EDITOR" "$HOME/.config/clangd/config.yaml"'
 elif [[ -f "$HOME/.config/clangd/config.yml" ]]; then
-    __alias_no_complete \
-        edclangd '"$EDITOR" "$HOME/.config/clangd/config.yml"'
-
+    __alias_no_complete edclangd '"$EDITOR" "$HOME/.config/clangd/config.yml"'
 fi
 
-! [[ -z $STEAM_DIR ]] \
-    && __alias_no_complete gosteam 'pd "$STEAM_DIR"'
+! [[ -z $STEAM_DIR ]] && __alias_no_complete gosteam 'pd "$STEAM_DIR"'
 
 if _cmd 'vscodium'; then
-    __simple_alias \
-        code 'vscodium '
+    __simple_alias code 'vscodium '
 
     export CODIUMRC="$HOME/.config/VSCodium/User/settings.json"
-
     if _file_readable_writeable "$CODIUMRC"; then
         __alias_no_complete edcodium 'vscodium "$CODIUMRC"'
     else
@@ -459,9 +426,7 @@ if _cmd 'vscodium'; then
 fi
 
 if _cmd 'prime-run'; then
-    __simple_alias \
-        prime-run 'prime-run '
-
+    __simple_alias prime-run 'prime-run '
     __cmd_alias 'hyprland' hyprland 'prime-run hyprland'
 
     __cmd_alias_complete_alias \
@@ -471,12 +436,8 @@ if _cmd 'prime-run'; then
 fi
 
 if _cmd 'winetricks'; then
-    __alias_complete_alias \
-        winetricks 'winetricks --optout'
-
-    __cmd_alias_complete_alias \
-        'zenity' winetricks 'winetricks --gui=zenity --optout'
-
+    __alias_complete_alias winetricks 'winetricks --optout'
+    __cmd_alias_complete_alias 'zenity' winetricks 'winetricks --gui=zenity --optout'
 fi
 
 if _cmd '__wezterm_set_user_var' '_run_prog'; then
