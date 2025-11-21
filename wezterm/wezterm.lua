@@ -3,10 +3,11 @@ local mux = wezterm.mux
 local act = wezterm.action
 
 ---@param str string
-local function carriage_return(str) return ("%s\r"):format(str) end
+local function carriage_return(str)
+    return ("%s\r"):format(str)
+end
 
 ---@param fg_procc_name string
----@return boolean
 local function is_shell(fg_procc_name)
     local shell_names = { "bash", "zsh", "fish", "sh", "ksh", "dash" }
     local process = fg_procc_name:match("[^/\\]+$") or fg_procc_name ---@type string
@@ -19,20 +20,19 @@ local function is_shell(fg_procc_name)
 end
 
 wezterm.on("user-var-changed", function(window, _, name, value)
-    ---@diagnostic disable:undefined-global
-    if not wezterm_config_nvim then
+    if not wezterm_config_nvim then ---@diagnostic disable-line:undefined-global
         return
     end
 
     local overrides = window:get_config_overrides() or {}
+
+    ---@diagnostic disable-next-line:undefined-global
     overrides = wezterm_config_nvim.override_user_var(overrides, name, value)
     window:set_config_overrides(overrides)
-    ---@diagnostic enable:undefined-global
 end)
 
 wezterm.on("format-tab-title", function(tab)
-    local prog = tab.active_pane.user_vars.PROG
-    return ("%s [%s]"):format(tab.active_pane.title, (prog or ""))
+    return ("%s [%s]"):format(tab.active_pane.title, (tab.active_pane.user_vars.PROG or ""))
 end)
 
 wezterm.on("open-uri", function(_, pane, uri)
@@ -116,24 +116,18 @@ wezterm.on("window-focus-changed", function(window, _)
     wezterm.log_info(("the focus state of %s changed to %s"):format(id, focused))
 end)
 
-wezterm.on(
-    "window-config-reloaded",
-    function(window, _)
-        wezterm.log_info(("the config was reloaded for window %s"):format(window:window_id()))
-    end
-)
+wezterm.on("window-config-reloaded", function(window, _)
+    wezterm.log_info(("the config was reloaded for window %s"):format(window:window_id()))
+end)
 
 local config = wezterm.config_builder()
 
 config.launch_menu = { { args = { "top" } }, { label = "Bash", args = { "bash", "-l" } } }
-
 config.window_background_opacity = 1.0
 config.kde_window_background_blur = true
-
 config.front_end = "WebGpu"
 config.webgpu_power_preference = "HighPerformance"
 config.webgpu_force_fallback_adapter = false
-
 config.mouse_bindings = {
     { -- Scrolling up while holding CTRL increases the font size
         event = { Down = { streak = 1, button = { WheelUp = 1 } } },
@@ -172,12 +166,12 @@ config.font = wezterm.font({
         "clig=1",
         "liga=1",
         "zero",
-        -- 'onum',
+        "onum",
         -- 'cv01', -- `a`
-        -- 'cv02', -- `g`
+        "cv02", -- `g`
         -- 'cv03', -- `i`
         -- 'cv04', -- `i`
-        -- 'cv05', -- `i`
+        "cv05", -- `i`
         "cv06", -- `i`
         -- 'cv07',
         -- 'cv08',
@@ -231,7 +225,6 @@ config.cursor_blink_ease_in = "Linear"
 config.cursor_blink_ease_out = "Linear"
 config.default_cursor_style = "BlinkingBlock"
 config.color_scheme = "Tokyo Night Storm (Gogh)"
-config.enable_kitty_graphics = true
 config.enable_scroll_bar = false
 config.enable_wayland = true
 config.hide_tab_bar_if_only_one_tab = true
@@ -253,14 +246,14 @@ table.insert(config.hyperlink_rules, {
     format = "https://example.com/tasks/?t=$1",
 })
 
--- make username/project paths clickable. this implies paths like the following are for github.
--- ( "nvim-treesitter/nvim-treesitter" | wbthomason/packer.nvim | wezterm/wezterm | "wezterm/wezterm.git" )
+-- Make username/project paths clickable. this implies paths like the following are for GitHub.
+-- ("nvim-treesitter/nvim-treesitter"|wbthomason/packer.nvim|wezterm/wezterm|"wezterm/wezterm.git")
 -- as long as a full url hyperlink regex exists above this it should not match a full url to
--- github or gitlab / bitbucket (i.e. https://gitlab.com/user/project.git is still a whole clickable url)
+-- github or gitlab / bitbucket (i.e. https://gitlab.com/user/project.git is still a whole clickable URL)
 table.insert(config.hyperlink_rules, {
     regex = [[["]?([\w\d]{1}[-\w\d]+)(/){1}([-\w\d\.]+)["]?]],
     format = "https://www.github.com/$1/$3",
 })
 
 return config
--- vim:ts=4:sts=4:sw=4:et:
+-- vim:ts=4:sts=4:sw=4:et:ai:si:sta:
