@@ -49,5 +49,9 @@ patches/
 *.pacnew
 *.pacsave
 
+# LuaRocks Files
+upload_config.lua
+
+# History Files
 .*_history
 *_history
