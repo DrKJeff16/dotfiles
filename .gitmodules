@@ -1,6 +1,6 @@
 [submodule "nvim"]
 	path = nvim
-	url = https://codeberg.org/DrKJeff16/Jnvim.git
+	url = https://github.com/DrKJeff16/nvim.git
 	branch = main
 [submodule "wezterm/wezterm-types"]
 	path = wezterm/wezterm-types
