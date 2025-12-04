@@ -1,7 +1,4 @@
-#!/bin/bash
-
 ! [[ -z ${PROJ_D+X} ]] && return
+! [[ -d "$HOME/Projects" ]] && return
 
-if [[ -d "$HOME/Projects" ]] ; then
-	export PROJ_D="$HOME/Projects"
-fi
+export PROJ_D="$HOME/Projects"

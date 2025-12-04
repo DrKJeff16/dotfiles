@@ -12,6 +12,6 @@ if _cmd 'cargo'; then
 fi
 
 if _cmd 'rustc'; then
-	[[ -f "$(rustc --print sysroot)/etc/bash_completion.d/cargo" ]] && \
-        . "$(rustc --print sysroot)/etc/bash_completion.d/cargo"
+	[[ -f "$(rustc --print sysroot)/etc/bash_completion.d/cargo" ]] \
+	    && . "$(rustc --print sysroot)/etc/bash_completion.d/cargo"
 fi

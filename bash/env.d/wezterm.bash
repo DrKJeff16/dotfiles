@@ -4,9 +4,7 @@
 
 # shellcheck shell=bash disable=SC1001,SC2207,SC2237,SC2016,SC2236,2154 enable=require-double-brackets
 
-if ! _cmd 'wezterm'; then
-    return
-fi
+! _cmd 'wezterm' && return
 
 export WEZTERM_D="${HOME}/.config/wezterm"
 if [[ -r "${WEZTERM_D}/wezterm.lua" ]]; then

@@ -1,11 +1,9 @@
 [[ $- != *i* ]] && return
 
-if which 'shfmt' &> /dev/null ; then
+! which 'shfmt' &> /dev/null && return
 
-    shfmt() {
-        command shfmt -i 0 -ci -sr -kp "$@"
-        return $?
-    }
-
-    export -f shfmt
-fi
+shfmt() {
+    command shfmt -i 0 -ci -sr -kp "$@"
+    return $?
+}
+export -f shfmt

@@ -51,8 +51,7 @@ if [[ "$(whoami)" != "root" ]] && [[ $UID -ne 0 ]]; then
             'pacman-mirrors' pacman-mirrors 'sudo pacman-mirrors' \
             'reflector' reflector 'sudo reflector'
 
-        __cmd_alias_no_complete \
-            'reflector' upd_mirrors 'reflector -c US --latest 16 --protocol https -a 6 --sort rate --save /etc/pacman.d/mirrorlist'
+        __cmd_alias_no_complete 'reflector' upd_mirrors 'reflector -c US --latest 16 --protocol https -a 6 --sort rate --save /etc/pacman.d/mirrorlist'
 
         if ! _cmd 'bak_pkgs'; then
             __alias_no_complete bak_pkgs 'pacman -Q | cut -d " " -f1 >| ~/.packages.list'
@@ -68,18 +67,16 @@ if [[ "$(whoami)" != "root" ]] && [[ $UID -ne 0 ]]; then
         'emerge' emerge 'sudo emerge' \
         'emerge-webrsync' emerge-webrsync 'sudo emerge-webrsync'
 
-    if _cmd 'apt'; then
-        __simple_alias \
-            apt 'sudo apt' \
-            apt-get 'sudo apt-get'
+    __cmd_alias_complete_alias \
+        'apt' apt 'sudo apt' \
+         'apt-get' apt-get 'sudo apt-get'
 
-        if _cmd 'apt-fast'; then
-            __alias_complete_alias \
-                apt 'apt-fast' \
-                apt-fast 'sudo apt-fast' \
-                apt-get 'apt-fast'
+    if _cmd 'apt-fast'; then
+        __alias_complete_alias \
+            apt 'apt-fast' \
+            apt-fast 'sudo apt-fast' \
+            apt-get 'apt-fast'
 
-        fi
     fi
 
     if _cmd 'systemctl'; then
@@ -104,7 +101,7 @@ if [[ "$(whoami)" != "root" ]] && [[ $UID -ne 0 ]]; then
 
     __cmd_alias \
         'depmod' depmod 'sudo depmod' \
-        'dpkg' sdpkg 'sudo dpkg' \
+        'dpkg' dpkg 'sudo dpkg' \
         'etckeeper' etckeeper 'sudo etckeeper' \
         'gpasswd' gpasswd 'sudo gpasswd' \
         'grub-mkconfig' grub-mkconfig 'sudo grub-mkconfig' \
@@ -193,23 +190,15 @@ __alias_no_complete \
     qth 'hdel; qt' \
     rtrm '. "$HOME/.bash_profile"'
 
-! [[ -z ${VIMRC+X} ]] \
-    && __alias_no_complete vimrc 'vim "$VIMRC" +"cd $HOME"'
-
-! [[ -z ${TMUX_CFG+X} ]] \
-    && __alias_no_complete edtmux '"$EDITOR" "$TMUX_CFG"'
-
-! [[ -z ${NVIM_CFG+X} ]] \
-    && __alias_no_complete gonvim_cfg '[[ "$(pwd)" != "${NVIM_CFG}*" ]] && pd "$NVIM_CFG"'
-
-! [[ -z ${NVIM_CFG_LUA+X} ]] \
-    && __alias_no_complete nvim_lua 'pd "$NVIM_CFG_LUA"'
-
-! [[ -z ${NVIMRC+X} ]] \
-    && __alias_no_complete nvimrc 'nvim "$NVIMRC" +"cd $NVIM_CFG"'
-
-! [[ -z ${NANORC+X} ]] \
-    && __alias_no_complete nanorc 'nano "$NANORC"'
+! [[ -z ${VIMRC+X} ]] && __alias_no_complete vimrc 'vim "$VIMRC" +"cd $HOME"'
+! [[ -z ${TMUX_CFG+X} ]] && __alias_no_complete edtmux '"$EDITOR" "$TMUX_CFG"'
+! [[ -z ${NVIM_CFG+X} ]] && __alias_no_complete gonvim_cfg '[[ "$(pwd)" != "${NVIM_CFG}*" ]] && pd "$NVIM_CFG"'
+! [[ -z ${NVIM_CFG_LUA+X} ]] && __alias_no_complete nvim_lua 'pd "$NVIM_CFG_LUA"'
+! [[ -z ${NVIMRC+X} ]] && __alias_no_complete nvimrc 'nvim "$NVIMRC" +"cd $NVIM_CFG"'
+! [[ -z ${NANORC+X} ]] && __alias_no_complete nanorc 'nano "$NANORC"'
+! [[ -z ${WEZTERM_D+X} ]] && __alias_no_complete gowezterm 'pd "$WEZTERM_D"'
+! [[ -z ${WEZTERMRC+X} ]] && __alias_no_complete edwezterm '"$EDITOR" "$WEZTERMRC"'
+! [[ -z ${TEMPLD+X} ]] && __alias_no_complete gotmpl 'pd "$TEMPLD"'
 
 if _cmd 'lsd'; then
     __alias_complete_alias tree 'lsd --tree '
@@ -234,23 +223,21 @@ __cmd_alias \
     'yt-dlp' yt-dlp 'yt-dlp --prefer-free-formats --prefer-ffmpeg'
 
 if _cmd 'python3'; then
-    __simple_alias \
+    __alias_complete_alias \
         python3 'python3 -q ' \
         python 'python3 '
 
     _cmd '__pip_alias' && __pip_alias
 elif _cmd 'python'; then
-    __simple_alias python 'python -q '
-    __alias_complete_alias python3 'python '
+    __alias_complete_alias \
+        python 'python -q ' \
+        python3 'python '
 
     _cmd '__pip_alias' && __pip_alias
 fi
 
-[[ -d "$HOME/Music/.FLAC" ]] \
-    && __alias_no_complete goflac 'pd "$HOME/Music/.FLAC"'
-
-[[ -d "$HOME/Videos/.DL" ]] \
-    && __alias_no_complete govid 'pd "$HOME/Videos/.DL"'
+[[ -d "$HOME/Music/.FLAC" ]] && __alias_no_complete goflac 'pd "$HOME/Music/.FLAC"'
+[[ -d "$HOME/Videos/.DL" ]] && __alias_no_complete govid 'pd "$HOME/Videos/.DL"'
 
 __cmd_alias_complete_alias \
     'flatpak' upd_flatpak 'flatpak update' \
@@ -279,7 +266,6 @@ fi
 
 if _cmd 'git'; then
     __alias_no_complete gitconfig '"$EDITOR" "$HOME/.gitconfig" +"cd $HOME"'
-
     __alias_complete_alias \
         gclone 'git clone --recurse-submodules' \
         gitA 'git apply' \
@@ -330,7 +316,6 @@ fi
 
 if _cmd 'systemctl' && [[ "$USER" != "root" ]] && [[ $UID -ne 0 ]]; then
     __alias_no_complete susp 'systemctl suspend'
-
     __alias_complete_alias \
         usrv 'systemctl --user' \
         usrv_Halt 'systemctl --user stop --now' \
@@ -366,17 +351,10 @@ if ! [[ -z ${HYPR_CFG+X} ]] && ! [[ -z ${HYPRLANDRC+X} ]]; then
         edhyprcfg '"$EDITOR" "$HYPRLANDRC" +"cd $HYPR_CFG"' \
         gohypr 'pd "$HYPR_CFG"'
 
-    ! [[ -z ${HYPRLOCKRC+X} ]] \
-        && __alias_no_complete edhyprlock '"$EDITOR" "$HYPRLOCKRC" +"cd $HYPR_CFG"'
-
-    ! [[ -z ${HYPRIDLERC+X} ]] \
-        && __alias_no_complete edhypridle '"$EDITOR" "$HYPRIDLERC" +"cd $HYPR_CFG"'
-
-    ! [[ -z ${HYPRXDPHRC+X} ]] \
-        && __alias_no_complete edhyprxdph '"$EDITOR" "$HYPRXDPHRC" +"cd $HYPR_CFG"'
-
-    ! [[ -z ${HYPRGAMEMODE+X} ]] \
-        && __alias_no_complete edhyprgamemode '"$EDITOR" "$HYPRGAMEMODE" +"cd $HYPR_CFG"'
+    ! [[ -z ${HYPRLOCKRC+X} ]] && __alias_no_complete edhyprlock '"$EDITOR" "$HYPRLOCKRC" +"cd $HYPR_CFG"'
+    ! [[ -z ${HYPRIDLERC+X} ]] && __alias_no_complete edhypridle '"$EDITOR" "$HYPRIDLERC" +"cd $HYPR_CFG"'
+    ! [[ -z ${HYPRXDPHRC+X} ]] && __alias_no_complete edhyprxdph '"$EDITOR" "$HYPRXDPHRC" +"cd $HYPR_CFG"'
+    ! [[ -z ${HYPRGAMEMODE+X} ]] && __alias_no_complete edhyprgamemode '"$EDITOR" "$HYPRGAMEMODE" +"cd $HYPR_CFG"'
 
 fi
 
@@ -401,11 +379,6 @@ if ! [[ -z ${ALACRITTY_CFG+X} ]] && ! [[ -z ${ALACRITTYRC+X} ]]; then
 
 fi
 
-! [[ -z ${WEZTERM_D+X} ]] && __alias_no_complete gowezterm 'pd "$WEZTERM_D"'
-! [[ -z ${WEZTERMRC+X} ]] && __alias_no_complete edwezterm '"$EDITOR" "$WEZTERMRC"'
-
-! [[ -z ${TEMPLD+X} ]] && __alias_no_complete gotmpl 'pd "$TEMPLD"'
-
 if [[ -f "$HOME/.config/clangd/config.yaml" ]]; then
     __alias_no_complete edclangd '"$EDITOR" "$HOME/.config/clangd/config.yaml"'
 elif [[ -f "$HOME/.config/clangd/config.yml" ]]; then
@@ -428,7 +401,6 @@ fi
 if _cmd 'prime-run'; then
     __simple_alias prime-run 'prime-run '
     __cmd_alias 'hyprland' hyprland 'prime-run hyprland'
-
     __cmd_alias_complete_alias \
         'neovide' neovide 'prime-run neovide' \
         'spotify' spotify 'prime-run spotify'

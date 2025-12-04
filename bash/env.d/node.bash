@@ -1,5 +1,4 @@
 [[ $- != *i* ]] && return
+! _cmd 'npm' && return
 
-if _cmd 'npm'; then
-    [[ -f "$HOME/.npmrc" ]] && export NPMRC="$HOME/.npmrc"
-fi
+[[ -f "$HOME/.npmrc" ]] && export NPMRC="$HOME/.npmrc"

@@ -1,5 +1,6 @@
 [[ "$UID" == 0 ]] && return
+! _cmd 'steam-runtime' && return
 
-if _cmd 'steam-runtime' && [[ -d "$HOME/.local/share/Steam" ]]; then
-    export STEAM_DIR="$HOME/.local/share/Steam"
-fi
+! [[ -d "$HOME/.local/share/Steam" ]] && return
+
+export STEAM_DIR="$HOME/.local/share/Steam"

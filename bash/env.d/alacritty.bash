@@ -1,6 +1,4 @@
-if ! _cmd 'alacritty'; then
-    return
-fi
+! _cmd 'alacritty' && return
 
 export ALACRITTY_CFG="$HOME/.config/alacritty"
 export ALACRITTYRC="$ALACRITTY_CFG/alacritty.toml"

@@ -1,3 +1,5 @@
+[[ $- != *i* ]] && return
+
 PS1='\[\e[m\]'
 
 if _cmd '__prompt_ec'; then

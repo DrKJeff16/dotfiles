@@ -1,6 +1,7 @@
 [[ "$UID" == 0 ]] && return
+! _cmd 'waybar' && return
 
-if _cmd 'waybar' && [[ -d "$HOME/.config/waybar" ]]; then
-    export WAYBAR_CFG="$HOME/.config/waybar"
-    export WAYBARRC="$WAYBAR_CFG/config.jsonc"
-fi
+! [[ -d "$HOME/.config/waybar" ]] && return
+
+export WAYBAR_CFG="$HOME/.config/waybar"
+export WAYBARRC="$WAYBAR_CFG/config.jsonc"

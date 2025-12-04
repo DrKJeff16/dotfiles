@@ -543,6 +543,22 @@ gocfg() {
 }
 export -f gocfg
 
+godocs() {
+    local TARGET="$HOME/Documents"
+    ! [[ -d "$TARGET" ]] && return 127
+    [[ $# -eq 0 ]] && pd "$TARGET" && return 0
+
+    local DIR
+    for D in $(find "$TARGET" -maxdepth 1 -type d | tail -n +2); do
+        DIR="$(basename "$D")"
+        if [[ "$1" == "$DIR" ]]; then
+            pd "${TARGET}/${DIR}" && return 0
+        fi
+    done
+    return 1
+}
+export -f godocs
+
 __get_last_cmd() { printf "%s" "$?"; return 0; }
 export -f __get_last_cmd
 complete -W "" __get_last_cmd
@@ -808,6 +824,13 @@ cl() {
 }
 export -f cl
 complete -A directory cl
+
+if which 'batman' &> /dev/null; then
+    function man() {
+        command batman "$@"
+        return $?
+    }
+fi
 
 if which 'emacs' &> /dev/null; then
     function emacs() {

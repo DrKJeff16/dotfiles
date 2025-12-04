@@ -4,9 +4,7 @@
 
 # shellcheck shell=bash disable=SC1001,SC2207,SC2237,SC2016,SC2236,2154 enable=require-double-brackets
 
-if ! _cmd 'luarocks'; then
-    return
-fi
+! _cmd 'luarocks' && return
 
 _luarocks() {
     local IFS
