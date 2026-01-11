@@ -1,0 +1,29 @@
+name: Update Git Submodules
+on:
+  schedule:
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+jobs:
+  update:
+    name: Update Git Submodules
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+        with:
+          submodules: "recursive"
+          fetch-depth: 0
+      - name: Update Submodules
+        id: submodules
+        uses: sgoudham/update-git-submodules@v2.1.3
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v8
+        with:
+          commit-message: "chore: update all submodules"
+          branch: "chore/update-all-submodules"
+          title: "chore: update all submodules"
+          body: ${{ steps.submodules.outputs.prBody }}
