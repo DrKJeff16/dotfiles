@@ -825,19 +825,15 @@ cl() {
 export -f cl
 complete -A directory cl
 
-if which 'batman' &> /dev/null; then
-    function man() {
-        command batman "$@"
-        return $?
-    }
-fi
+# if which 'batman' &> /dev/null; then
+#     function man() {
+#         command batman "$@"
+#         return $?
+#     }
+# fi
 
 if which 'emacs' &> /dev/null; then
     function emacs() {
-        if ! which 'emacs' &> /dev/null; then
-            error "\`emacs\` not found in PATH"
-            return 1
-        fi
         command emacs "$@" &> /dev/null &
         return 0
     }
@@ -878,4 +874,17 @@ if which 'kgpg' &> /dev/null; then
     export -f kgpg
 fi
 
-# vim:ft=bash:ts=4:sts=4:sw=4:et:ai:si:sta:
+mkd() {
+    if [[ $# -eq 0 ]]; then
+        error "No directories set!"
+        return 1
+    fi
+
+    mkdir -pv "$@" || return 1
+    cl "$@" || return 1
+    return 0
+}
+export -f mkd
+complete -A directory mkd
+
+# vim: set ft=bash ts=4 sts=4 sw=4 et ai si sta:
