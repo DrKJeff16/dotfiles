@@ -3,56 +3,6 @@
 #
 # shellcheck disable=1090,2044,2207
 
-# Print all args `stderr`
-error() {
-    local TXT=("$@")
-    printf "%s\n" "${TXT[@]}" >&2
-    return 0
-}
-export -f error
-complete -W "" error
-
-# Check whether a given console command exists
-_cmd() {
-    if [[ $# -eq 0 ]]; then
-        error "What command?"
-        return 127
-    fi
-
-    local OPTS=":hv"
-    local VERBOSE=0
-    local CMDS=()
-    local EXES=()
-    local ARG
-    while getopts "$OPTS" ARG; do
-        case "$ARG" in
-            h) return 0 ;;
-            v) VERBOSE=$((VERBOSE + 1))   ;;
-            *)
-                command -v "$ARG" &> /dev/null || return 1
-                CMDS+=("$ARG")
-                EXES+=("$(command -v "$ARG" 2> /dev/null)")
-                ;;
-        esac
-        shift
-    done
-
-    if [[ $VERBOSE -eq 1 ]]; then
-        printf "%s\n" "${CMDS[@]}"
-    elif [[ $VERBOSE -eq 2 ]]; then
-        printf "\`%s\` ==> OK\n" "${CMDS[@]}"
-    elif [[ $VERBOSE -ge 3 ]]; then
-        for I in $(seq 1 ${#CMDS[@]}); do
-            I=$((I - 1))
-            printf "\`%s\` ==> \`%s\` ==> OK\n" "${CMDS[I]}" "${EXES[I]}"
-        done
-        unset I
-    fi
-    return 0
-}
-export -f _cmd
-complete -c _cmd
-
 _cmd_exec() {
     [[ $# -eq 0 ]] && return 127
     ! _cmd "$1" && return 1

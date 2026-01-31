@@ -165,7 +165,11 @@ __simple_alias \
     rmdir 'rmdir -v' \
     umount 'umount -v'
 
-__cmd_alias_no_complete 'shutdown' off 'shutdown -h now'
+if _cmd 'countdown'; then
+    __cmd_alias_no_complete 'shutdown' off 'countdown -s && shutdown -h now'
+else
+    __cmd_alias_no_complete 'shutdown' off 'shutdown -h now'
+fi
 
 __alias_complete_alias \
     egrep 'grep -E' \
@@ -244,7 +248,8 @@ __cmd_alias_complete_alias \
     'make' make 'make -j"$(nproc)" -l"$(nproc)"' \
     'make' mkc 'make clean' \
     'make' mkdc 'make distclean' \
-    'npm' upd_npm 'npm update -g'
+    'npm' upd_npm 'npm update -g' \
+    'rustup' upd_rustup 'rustup update'
 
 ! [[ -z ${ORGD+X} ]] && __alias_no_complete goorg 'pd "$ORGD"'
 

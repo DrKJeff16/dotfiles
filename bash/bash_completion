@@ -253,3 +253,8 @@ __complete_godocs() {
 complete -F __complete_godocs godocs
 
 complete -A directory mkdir
+
+# Begin added by argcomplete
+source "/home/drjeff16/.local/share/virtualenvs/vim-eof-comment-lKeFXQ6D/lib/python3.13/site-packages/argcomplete/bash_completion.d/_python-argcomplete"
+_cmd 'filter_histfile' && eval "$(register-python-argcomplete filter_histfile)"
+# End added by argcomplete
