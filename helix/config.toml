@@ -1,0 +1,47 @@
+theme = "onedark"
+
+[editor]
+line-number = "absolute"
+cursorline = true
+cursorcolumn = false
+auto-completion = true
+path-completion = true
+auto-format = false
+completion-trigger-len = 1
+auto-info = true
+bufferline = "always"
+color-modes = true
+scrolloff = 5
+mouse = false
+middle-click-paste = false
+shell = ["bash", "-c"]
+default-line-ending = "lf"
+insert-final-newline = false
+trim-final-newlines = true
+trim-trailing-whitespace = true
+popup-border = "all"
+indent-heuristic = "tree-sitter"
+editor-config = false
+
+[editor.lsp]
+enable = true
+display-inlay-hints = true
+
+[editor.cursor-shape]
+insert = "bar"
+normal = "block"
+select = "underline"
+
+[editor.statusline]
+left = ["mode", "version-control"]
+center = ["file-indent-style", "spacer", "file-name", "read-only-indicator", "file-modification-indicator", "diagnostics", "spinner"]
+right = ["file-encoding", "file-type", "file-line-ending", "position"]
+separator = "│"
+mode.normal = "N"
+mode.insert = "I"
+mode.select = "S"
+diagnostics = ["warning", "error"]
+workspace-diagnostics = ["warning", "error"]
+
+[editor.file-picker]
+hidden = false
