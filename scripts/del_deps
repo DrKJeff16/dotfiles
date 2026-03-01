@@ -1,0 +1,160 @@
+#!/usr/bin/env bash
+
+ARGS=":hy"
+
+NOCONFIRM=0
+
+ELEVATOR='sudo'
+VALID_MANAGERS=(
+    'pacman'
+    'apt-fast'
+    'apt'
+    'apt-get'
+)
+
+PKG_MANAGER=''
+MGR_CMD=()
+
+error() {
+    local TXT=("$@")
+    printf "%s\n" "${TXT[@]}" >&2
+    return 0
+}
+
+_cmd() {
+    [[ $# -eq 0 ]] && return 127
+
+    while [[ $# -gt 0 ]]; do
+        ! command -v "$1" &> /dev/null && return 1
+
+        shift
+    done
+
+    return 0
+}
+
+die() {
+    local EC=0
+
+    if [[ $# -ge 1 ]] && [[ $1 =~ ^(0|-?[1-9][0-9]*)$ ]]; then
+        EC="$1"
+        shift
+    fi
+
+    if [[ $# -gt 0 ]]; then
+        local TXT=("$@")
+        if [[ $EC -eq 0 ]]; then
+            printf "%s\n" "${TXT[@]}"
+        else
+            error "${TXT[@]}"
+        fi
+    fi
+
+    exit "$EC"
+}
+
+usage() {
+    local EC=0
+    [[ "$1" =~ ^(0|-?[1-9][0-9]*)$ ]] && EC="$1"
+
+    local TXT=(
+        "WIP, sorry"
+        ""
+    )
+
+    die "$EC" "${TXT[@]}"
+}
+
+__select_pkg_manager() {
+    for M in "${VALID_MANAGERS[@]}"; do
+        if _cmd "$M"; then
+            PKG_MANAGER="$M"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+__generate_cmds() {
+    [[ $# -eq 0 ]] && return 127
+
+    local CMD="$1"
+
+    case "$CMD" in
+        pacman)
+            MGR_CMD=(
+                loop
+                "${ELEVATOR} ${CMD} -R $(pacman -Qdt | cut -d ' ' -f1) 2> /dev/null"
+            )
+            MGR_CMD_NOCONFIRM=(
+                loop
+                "${ELEVATOR} ${CMD} -R $(pacman -Qdt | cut -d ' ' -f1) --noconfirm 2> /dev/null"
+            )
+            ;;
+
+        "apt-fast"|"apt-get"|apt)
+            MGR_CMD=(
+                noloop
+                "${ELEVATOR} ${CMD} autoclean 2> /dev/null"
+                "${ELEVATOR} ${CMD} autoremove --purge 2> /dev/null"
+                "${ELEVATOR} ${CMD} autoremove 2> /dev/null"
+            )
+            MGR_CMD_NOCONFIRM=(
+                noloop
+                "${ELEVATOR} ${CMD} -y autoclean 2> /dev/null"
+                "${ELEVATOR} ${CMD} -y autoremove --purge 2> /dev/null"
+                "${ELEVATOR} ${CMD} -y autoremove 2> /dev/null"
+            )
+            ;;
+        *) return 1 ;;
+    esac
+
+    return 0
+}
+
+__clean_deps() {
+    local CMDS=()
+    local LOOPS=""
+    local C
+
+    if [[ $NOCONFIRM -eq 0 ]]; then
+        CMDS=("${MGR_CMD[@]}")
+    else
+        CMDS=("${MGR_CMD_NOCONFIRM[@]}")
+    fi
+
+
+    for C in $(seq 1 ${#CMDS[@]}); do
+        C=$(( C - 1 ))
+
+        [[ $C -eq 0 ]] && continue
+
+        if [[ "$LOOPS" == "loop" ]]; then
+            while true; do
+                eval "${CMDS[C]}" || break
+            done
+
+            continue
+        elif [[ "$LOOPS" == "noloop" ]]; then
+            eval "${CMDS[C]}" || die 1
+        fi
+    done
+
+    return 0
+}
+
+while getopts "$ARGS" OPTION; do
+    case "$OPTION" in
+        h) usage 0 ;;
+        y) NOCONFIRM=1 ;;
+        *) usage 1 ;;
+    esac
+done
+
+__select_pkg_manager || exit 2
+__generate_cmds "$PKG_MANAGER" || exit 3
+
+__clean_deps
+
+die 0

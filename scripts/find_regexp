@@ -4,7 +4,15 @@
 # Print all Lua files containing the specified regex
 #
 
+set -o pipefail
+
 [[ $# -eq 0 ]] && exit 127
+
+EXTENSIONS=()
+QUERY=""
+TXT=()
+
+OPTIONS=":he:q:"
 
 error() {
     local TXT=("$@")
@@ -34,27 +42,74 @@ die() {
     exit "$EC"
 }
 
-QRY="$1"
-TXT=()
+# Print help message
+#
+# Usage:
+#   usage [NUM] [<text> [<text>[...]]]
+usage() {
+    local EC=0
+    local TXT=()
+    if [[ "$1" =~ ^(0|-?[1-9][0-9]*)$ ]]; then
+        EC="$1"
+        shift
+    fi
+
+    while [[ $# -gt 0 ]]; do
+        TXT+=("$1")
+        shift
+    done
+
+    if [[ ${#TXT[@]} -gt 0 ]] && [[ -n "${TXT[${#TXT[@]} - 1]}" ]]; then
+        TXT+=("")
+    fi
+    TXT+=(
+        "  usage: find_regexp [-h] -q <QUERY> -e <EXTENSION> [-e <EXTENSION> [-e ...]]"
+        ""
+        "     -h                  Prints this help message"
+        "     -q <QUERY>          The query (MUST BE IN EXTENDED REGEX FORMAT)"
+        "     -e <EXTENSION>      The file extension to analyze."
+        "                         Can be passed multiple times to analyze different files"
+        ""
+    )
+    die "$EC" "${TXT[@]}"
+}
 
 search_qry() {
+    local EXTENSION="$1"
     local IFS
     local FPATHS
 
-    IFS=$'\n' FPATHS=($(find . -type f -regex '.*\.lua$' | cut -d '/' -f2-))
-for F in "${FPATHS[@]}"; do
-    if grep -E "$QRY" "$F" &> /dev/null; then
-        TXT+=("$F")
-    fi
-done
+    IFS=$'\n' FPATHS=($(fd --type f --full-path ./ --extension "${EXTENSION}"))
+    for F in "${FPATHS[@]}"; do
+        if grep -E "$QUERY" "$F" &> /dev/null; then
+            TXT+=("$F")
+        fi
+    done
 }
 
-search_qry
+while getopts "$OPTIONS" OPTION; do
+    case "$OPTION" in
+        h) usage 0 ;;
+        e) EXTENSIONS+=("${OPTARG}") ;;
+        q) QUERY="${OPTARG}" ;;
+        :) usage 1 ;;
+        ?) usage 1 ;;
+        *) usage 1 ;;
+    esac
+done
+
+[[ -z "$QUERY" ]] && die 2
+[[ ${#EXTENSIONS[@]} -eq 0 ]] && EXTENSIONS=("lua")
+
+
+for EXT in "${EXTENSIONS[@]}"; do
+    search_qry "$EXT" || die 1
+done
 
 if [[ ${#TXT[@]} -eq 0 ]]; then
     die 1
 fi
 
-printf "%s\n" "${TXT[@]}"
+printf "%s\n" "${TXT[@]}" | sort
 
 die 0

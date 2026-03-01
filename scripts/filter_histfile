@@ -1,39 +1,35 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """Filter bash histfile."""
 
-import argparse as ap
-import sys
+from argparse import ArgumentParser, Namespace
+from io import TextIOWrapper
 from os import environ
 from os.path import expanduser, expandvars, isfile, realpath
 from sys import exit as Exit
 from sys import stderr as STDERR
 from sys import stdout as STDOUT
-from typing import Any, Dict, NoReturn, Optional, TextIO, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
-MAXSIZE = int(environ.get("HISTFILESIZE", "8000"))
+import argcomplete as acp
+
+MAXSIZE = int(environ.get("HISTFILESIZE", "32500"))
 VERBOSE = False
 
 
-def error(
-    *msg: object, end: str = "\n", sep: str = " ", flush: bool = False
-) -> NoReturn:
+def error(*msg, **kwargs) -> None:
     """Print msg to STDERR."""
     if not msg:
         return
 
-    if end is not str:
-        end = "\n"
-
-    if sep is not str:
-        sep = " "
-
-    if flush is not bool:
-        flush = False
+    end: str = kwargs.get("end", "\n")
+    sep: str = kwargs.get("sep", " ")
+    flush: bool = kwargs.get("flush", False)
 
     print(*msg, end=end, sep=sep, flush=flush, file=STDERR)
 
 
-def die(code: int = 0, *msg, **kwargs) -> NoReturn:
+def die(code: int = 0, *msg, **kwargs) -> None:
     """Kill the program with a given code, and print a message if given."""
     try:
         code = int(code)
@@ -41,25 +37,27 @@ def die(code: int = 0, *msg, **kwargs) -> NoReturn:
         code = 1
 
     if msg:
-        end = kwargs.get("end", "\n")
-        sep = kwargs.get("sep", " ")
-        flush = kwargs.get("flush", False)
-        file = STDOUT if code == 0 else STDERR
+        end: str = kwargs.get("end", "\n")
+        sep: str = kwargs.get("sep", " ")
+        flush: bool = kwargs.get("flush", False)
 
-        print(*msg, end=end, sep=sep, flush=flush, file=file)
+        if code != 0:
+            error(*msg, end=end, sep=sep, flush=flush)
+        else:
+            print(*msg, end=end, sep=sep, flush=flush)
 
     Exit(code)
 
 
-def verb_print(*data: object, **kwargs) -> NoReturn:
+def verb_print(verbose: bool, *data: object, **kwargs) -> None:
     """Print if verbose is turned on"""
-    if not (VERBOSE and data):
+    if not (verbose and data):
         return
 
-    end = kwargs.get("end", "\n")
-    sep = kwargs.get("sep", " ")
+    end: str = kwargs.get("end", "\n")
+    sep: str = kwargs.get("sep", " ")
+    flush: bool = kwargs.get("flush", False)
     file = kwargs.get("file", STDOUT)
-    flush = kwargs.get("flush", False)
 
     print(*data, end=end, sep=sep, file=file, flush=flush)
 
@@ -102,13 +100,12 @@ def line_strip(data: str) -> str:
     return data.rstrip("\n").strip(" ").rstrip("/")
 
 
-def filter(f: TextIO) -> str:
+def filter(verbose: bool, f: TextIOWrapper) -> str:
     """Filter histfile"""
     if not f.readable():
         raise ValueError("(filter_histfile - filter): file not readable!")
 
     buffer = list()
-
     data = line_strip(f.readline())
     while data != "":
         buffer.append(data)
@@ -123,8 +120,8 @@ def filter(f: TextIO) -> str:
             new_buffer.append(v)
 
     del buffer
-    new_buffer.reverse()
 
+    new_buffer.reverse()
     for i, v in enumerate(new_buffer):
         if v in ("\n", "") or len(v) <= 1:
             new_buffer.pop(i)
@@ -140,70 +137,81 @@ def filter(f: TextIO) -> str:
     if res[-1] != "\n":
         res += "\n"
 
-    verb_print(res)
-
+    verb_print(verbose, res)
     return res
 
 
-def gen_args(P: ap.ArgumentParser,
-             A: Tuple[Tuple[str]],
-             D: Tuple[Dict[str, Any]]) -> ap.Namespace:
+def gen_args(
+        args: List[List[str]],
+        opts: List[Tuple[Dict[str, Any], acp.completers.FilesCompleter | None]]
+) -> Namespace:
     """Generate argparse arguments from special dict."""
-    if not (P and A and D):
+    if not (args and opts):
         raise AssertionError("(filter_histfile - gen_args): Bad arguments!")
 
-    for arg, dest in zip(A, D):
-        P.add_argument(*arg, **dest)
+    parser = ArgumentParser(
+        prog="filter_histfile",
+        description="Filter histfile and get rid of duplicates"
+    )
+    completer = False
+    for arg, dest in zip(args, opts):
+        d = dest[0]
+        c = dest[1]
+        if not c or c is None:
+            parser.add_argument(*arg, **d)
+        else:
+            completer = True
+            parser.add_argument(*arg, **d).completer = c
 
-    return P.parse_args()
+    if completer:
+        acp.autocomplete(parser)
+
+    return parser.parse_args()
 
 
 def main() -> int:
     """Execute main workflow"""
-    global VERBOSE
     code = 0
+    dests: List[List[str]] = [
+        ["-v", "--verbose"],
+        ["-f", "--file"],
+    ]
+    kwargs: List[Tuple[Dict[str, Any], acp.completers.FilesCompleter | None]] = [
+        (
+            {
+                "action": "store_true",
+                "help": "Verbose mode",
+                "dest": "verbose",
+                "required": False,
+            },
+            None,
+        ),
+        (
 
-    prog = "filter_histfile"
-    prog_desc = "Filter histfile and get rid of duplicates"
+            {
+                "help": "Absolute path to histfile",
+                "dest": "fpath",
+                "default": "",
+                "nargs": 1,
+            },
+            acp.completers.FilesCompleter(),
+        )
+    ]
 
-    Parser = ap.ArgumentParser(prog, description=prog_desc)
-
-    dests = (
-        ("-v", "--verbose"),
-        ("-f", "--file"),
-    )
-    kwargs = (
-        {
-            "action": "store_true",
-            "help": "Verbose mode",
-            "dest": "verbose",
-            "required": False,
-        },
-        {
-            "help": "Absolute path to histfile",
-            "dest": "fpath",
-            "default": "",
-            "nargs": 1,
-        },
-    )
-
-    args = gen_args(Parser, dests, kwargs)
-
-    VERBOSE = args.verbose
-
-    if args.fpath is not str:
-        args.fpath = str(args.fpath)
+    args = gen_args(dests, kwargs)
+    fpath: str = str(args.fpath) if args.fpath is not str else args.fpath
+    verbose: bool = args.verbose
 
     try:
-        fpath = get_histfile_path(args.fpath)
-        with open(fpath, "r") as HISTFILE:
-            verb_print(f"Opened histfile `{fpath}`")
-
-            new_data = filter(HISTFILE)
+        histfile = open(get_histfile_path(fpath), "r")
+        verb_print(verbose, f"Opened histfile `{fpath}`")
+        new_data = filter(verbose, histfile)
+        histfile.close()
 
         if new_data != "":
-            with open(fpath, "w") as HISTFILE:
-                HISTFILE.write(new_data)
+            histfile = open(get_histfile_path(fpath), "w")
+            histfile.write(new_data)
+            histfile.close()
 
     except ValueError:
         code = 4

@@ -1,5 +1,4 @@
 scriptencoding utf-8
-
 set nocompatible helplang=en nospell
 
 nnoremap <silent> <Space> <Nop>
@@ -11,14 +10,16 @@ let g:loaded_netrw       = 1
 let g:loaded_netrwPlugin = 1
 
 set backspace=indent,eol,start
-set enc=utf-8
-
-set hid
-set splitright splitbelow equalalways
+set encoding=utf-8
+set hidden
+set splitright
+set splitbelow
+set equalalways
 set mouse=
-set timeout timeoutlen=500
+" set timeout
+" set timeoutlen=500
 
-set bg=dark
+set background=dark
 
 " Install vim-plug if not found
 if empty(glob('~/.vim/autoload/plug.vim'))
@@ -27,9 +28,13 @@ if empty(glob('~/.vim/autoload/plug.vim'))
 endif
 
 " Run PlugInstall if there are missing plugins
-au VimEnter * if len(filter(values(g:plugs), '!isdirectory(v:val.dir)'))
-            \ | PlugInstall --sync | source $MYVIMRC
-            \ | endif
+augroup plug_au
+    au!
+    au VimEnter * if len(filter(values(g:plugs), '!isdirectory(v:val.dir)'))
+                \ | PlugInstall --sync
+                \ | source $MYVIMRC
+                \ | endif
+augroup END
 
 function! s:plug_doc()
     let name = matchstr(getline('.'), '^- \zs\S\+\ze:')
@@ -40,16 +45,33 @@ function! s:plug_doc()
     endif
 endfunction
 
+function s:help_close()
+    if getbufvar(bufname(), '&buftype', 'ERROR') ==# 'help'
+        execute 'helpclose'
+    endif
+endfunction
+
 augroup PlugHelp
     au!
-    au FileType vim-plug nnoremap <buffer> <silent> H :call <SID>plug_doc()<CR>
+    au FileType vim-plug nnoremap <buffer><silent> H :call <SID>plug_doc()<CR>
+augroup END
+
+augroup custom_maps
+    au!
+    au FileType help nnoremap <buffer><silent> q :call <SID>help_close()<CR>
+    au FileType vim-plug nnoremap <buffer><silent> q :bdelete!<CR>
 augroup END
 
 call plug#begin()
+Plug 'junegunn/vim-plug'
+
+Plug 'editorconfig/editorconfig-vim'
 Plug 'vim-scripts/L9'
 Plug 'vim-scripts/UTL.vim', { 'as': 'UTL' }
 
 Plug 'liuchengxu/vim-which-key', { 'as': 'WhichKey' }
+
+Plug 'vlime/vlime', { 'rtp': 'vim/' }
 
 Plug 'vim-scripts/Auto-Pairs'
 Plug 'junegunn/vim-easy-align', { 'as': 'EasyAlign' }
@@ -65,6 +87,7 @@ Plug 'mattn/emmet-vim', { 'as': 'Emmet' }
 
 Plug 'pineapplegiant/spaceduck'
 Plug 'dracula/vim', { 'as': 'dracula' }
+Plug 'catppuccin/vim', { 'as': 'catppuccin' }
 Plug 'liuchengxu/space-vim-dark'
 Plug 'tomasr/molokai'
 Plug 'colepeters/spacemacs-theme.vim', { 'as': 'spacemacs' }
@@ -85,6 +108,8 @@ Plug 'prabirshrestha/asyncomplete.vim' | Plug 'prabirshrestha/async.vim'
 Plug 'prabirshrestha/asyncomplete-lsp.vim' | Plug 'prabirshrestha/vim-lsp' | Plug 'mattn/vim-lsp-settings'
 Plug 'prabirshrestha/asyncomplete-buffer.vim'
 Plug 'prabirshrestha/asyncomplete-file.vim'
+Plug 'prabirshrestha/asyncomplete-necovim.vim' | Plug 'Shougo/neco-vim'
+Plug 'prabirshrestha/asyncomplete-necosyntax.vim' | Plug 'Shougo/neco-syntax'
 
 if executable('zsh')
     Plug 'yuys13/asyncomplete-zsh.vim'
@@ -100,10 +125,9 @@ if executable('clang')
     Plug 'keremc/asyncomplete-clang.vim'
 endif
 
-Plug 'prabirshrestha/asyncomplete-necovim.vim' | Plug 'Shougo/neco-vim'
-
-" ATTENTION: Plug's closed
 call plug#end()
+
+set guifont=FiraCode\ Nerd\ Font\ Mono\ 19
 
 packadd nohlsearch
 
@@ -111,32 +135,53 @@ set nowrap
 set formatoptions=jqnl
 set smartcase noignorecase
 
-set nu signcolumn=yes nornu
-" set omnifunc=syntaxcomplete#Complete
+set number
+set norelativenumber
+set signcolumn=yes
+set omnifunc=syntaxcomplete#Complete
 set completeopt=menu,menuone,noinsert,noselect,preview
 
-set noerrorbells novisualbell t_vb= belloff=all
+set noerrorbells
+set novisualbell
+set t_vb=
+set belloff=all
 
-set wildmenu showcmd
-set title ru ls=2 stal=2 noshowmode
-set ar confirm
-set hlsearch incsearch showmatch
-set ts=4 sts=4 sw=4 et
-set ai si sta noci nopi
+set wildmenu
+set showcmd
+set title
+set ruler
+set laststatus=2
+set showtabline=2
+set noshowmode
+set autoread
+set confirm
+set hlsearch
+set incsearch
+set showmatch
+set tabstop=4
+set softtabstop=4
+set shiftwidth=4
+set expandtab
+set autoindent
+set smartindent
+set smarttab
+set nocopyindent
+set nopreserveindent
 
 if !has('gui_running')
     set t_Co=256
 endif
 
 if exists('+termguicolors')
-    set tgc
+    set termguicolors
 endif
 
 " silent! colorscheme spaceduck
 " silent! colorscheme dracula
 " silent! colorscheme space-vim-dark
 " silent! colorscheme molokai
-silent! colorscheme onedark
+" silent! colorscheme onedark
+silent! colorscheme catppuccin_frappe
 
 tnoremap <silent> <Esc> <C-\><C-n>
 
@@ -144,15 +189,48 @@ nnoremap <silent> <leader> :WhichKey '<Space>'<CR>
 nnoremap <silent> <localleader> :WhichKey '<Space>'<CR>
 
 let g:lightline = {
-            \ 'colorscheme': 'spaceduck',
+            \ 'colorscheme': 'catppuccin_frappe',
             \ }
 
 au! CompleteDone * if pumvisible() == 0 | pclose | endif
 
-inoremap <expr> <Tab>   pumvisible() ? "\<C-n>" : "\<Tab>"
-inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
-inoremap <expr> <CR>    pumvisible() ? asyncomplete#close_popup() : "\<CR>"
+
+function! s:check_back_space() abort
+    let col = col('.') - 1
+    return !col || getline('.')[col - 1]  =~ '\s'
+endfunction
+
+imap <silent> jj <Esc>
+
+inoremap <silent><expr> <Tab>
+            \ pumvisible() ? "\<C-n>" :
+            \ <SID>check_back_space() ? "\<Tab>" :
+            \ asyncomplete#force_refresh()
+inoremap <silent><expr> <S-Tab>
+            \ pumvisible() ? "\<C-p>" :
+            \ <SID>check_back_space() ? "\<S-Tab>" :
+            \ asyncomplete#force_refresh()
+inoremap <silent><expr> <CR>    pumvisible() ? asyncomplete#close_popup() : "\<CR>"
+inoremap <silent><expr> <C-e>   pumvisible() ? asyncomplete#cancel_popup() : "\<C-e>"
 imap <C-Space> <Plug>(asyncomplete_force_refresh)
+
+let g:webdevicons_enable = 1
+let g:webdevicons_enable_nerdtree = 1
+let g:webdevicons_conceal_nerdtree_brackets = 1
+let g:WebDevIconsNerdTreeGitPluginForceVAlign = 1
+let g:WebDevIconsUnicodeDecorateFolderNodes = 1
+let g:DevIconsEnableFoldersOpenClose = 1
+let g:DevIconsEnableFolderPatternMatching = 1
+let g:DevIconsEnableFolderExtensionPatternMatching = 1
+
+let g:fzf_vim = {
+            \   'preview_window': ['hidden,right,50%,<70(up,40%)', 'ctrl-/'],
+            \   'buffers_jump': 1,
+            \   'grep_multi_line': 1,
+            \   'commits_log_options': '--graph --color=always --format="%C(auto)%h%d %s %C(black)%C(bold)%cr"',
+            \   'commands_expect': 'alt-enter,ctrl-x',
+            \   'buffers_options': ['--style', 'full', '--border-label', ' Open Buffers '],
+            \ }
 
 let g:lsp_preview_float = 1
 let g:lsp_diagnostics_virtual_text_align = 'right' " Can be 'after', 'right', 'below' (default) or 'above'
@@ -193,23 +271,6 @@ function! s:check_back_space() abort
     let col = col('.') - 1
     return !col || getline('.')[col - 1]  =~ '\s'
 endfunction
-
-if executable('pylsp')
-    au User lsp_setup call lsp#register_server({
-                \ 'name': 'pylsp',
-                \ 'cmd': {server_info->['pylsp']},
-                \ 'allowlist': ['python'],
-                \ 'workspace_config': {
-                \   'pylsp': {
-                \     'plugins': {
-                \       'pycodestyle': {
-                \         'enabled': v:false,
-                \       },
-                \     },
-                \   },
-                \  },
-                \ })
-endif
 
 if executable('lua-language-server')
     let g:vim_lsp_settings_lua_language_server_workspace_config = {
@@ -291,7 +352,36 @@ if executable('lua-language-server')
                 \    }
                 \  }
                 \}
-    au User lsp_setup call lsp#register_server({
+endif
+
+let g:asyncomplete_buffer_clear_cache = 1
+let g:asyncomplete_auto_completeopt = 0
+
+set completeopt=menuone,noinsert,noselect,preview
+
+augroup pylsp_init
+    au!
+    au User lsp_setup if executable('pylsp')
+                \ | call lsp#register_server({
+                \ 'name': 'pylsp',
+                \ 'cmd': {server_info->['pylsp']},
+                \ 'allowlist': ['python'],
+                \ 'workspace_config': {
+                \   'pylsp': {
+                \     'plugins': {
+                \       'pycodestyle': {
+                \         'enabled': v:false,
+                \       },
+                \     },
+                \   },
+                \  },
+                \ })
+                \ | endif
+augroup END
+augroup luals_init
+    au!
+    au User lsp_setup if executable('lua-language-server')
+                \ | call lsp#register_server({
                 \     'name': 'lua-language-server',
                 \     'cmd': {server_info->lsp_settings#get('lua-language-server', 'cmd', [lsp_settings#exec_path('lua-language-server')]+lsp_settings#get('lua-language-server', 'args', []))},
                 \     'root_uri':{server_info->lsp_settings#get('lua-language-server', 'root_uri', lsp_settings#root_uri('lua-language-server'))},
@@ -302,81 +392,110 @@ if executable('lua-language-server')
                 \     'workspace_config': lsp_settings#get('lua-language-server', 'workspace_config', g:vim_lsp_settings_lua_language_server_workspace_config),
                 \     'semantic_highlight': lsp_settings#get('lua-language-server', 'semantic_highlight', {}),
                 \ })
-endif
+                \ | endif
+augroup END
+augroup html_lsp_init
+    au!
+    au User lsp_setup if executable('vscode-html-languageserver')
+                \ | call lsp#register_server({
+                \     'name': 'html-languageserver',
+                \     'cmd': {server_info->[&shell, &shellcmdflag, 'vscode-html-languageserver --stdio']},
+                \     'whitelist': ['html'],
+                \ })
+                \ | endif
+augroup END
+augroup css_ls_init
+    au!
+    au User lsp_setup if executable('vscode-css-languageserver')
+                \ | call lsp#register_server({
+                \     'name': 'css-languageserver',
+                \     'cmd': {server_info->[&shell, &shellcmdflag, 'vscode-css-languageserver --stdio']},
+                \     'whitelist': ['css', 'less', 'sass'],
+                \ })
+                \ | endif
+augroup END
+augroup bashls_init
+    au!
+    au User lsp_setup if executable('bash-language-server')
+                \ | call lsp#register_server({
+                \     'name': 'bash-language-server',
+                \     'cmd': {server_info->[&shell, &shellcmdflag, 'bash-language-server start']},
+                \     'allowlist': ['sh', 'bash'],
+                \ })
+                \ | endif
+augroup END
 
-au User asyncomplete_setup call asyncomplete#register_source(
-            \ asyncomplete#sources#necovim#get_source_options({
-            \     'name': 'necovim',
-            \     'allowlist': ['vim'],
-            \     'completor': function('asyncomplete#sources#necovim#completor'),
-            \ }))
-
-au User asyncomplete_setup call asyncomplete#register_source(asyncomplete#sources#buffer#get_source_options({
-            \     'name': 'buffer',
-            \     'allowlist': ['*'],
-            \     'completor': function('asyncomplete#sources#buffer#completor'),
-            \     'config': {
-            \        'max_buffer_size': 5000000,
-            \     },
-            \ }))
-
-au User asyncomplete_setup call asyncomplete#register_source(asyncomplete#sources#file#get_source_options({
-            \     'name': 'file',
-            \     'allowlist': ['*'],
-            \     'priority': 10,
-            \     'completor': function('asyncomplete#sources#file#completor')
-            \ }))
-
-let g:asyncomplete_buffer_clear_cache = 1
-
-if executable('clang')
-    au User asyncomplete_setup call asyncomplete#register_source(
+augroup asyncomplete_clang
+    au!
+    au User asyncomplete_setup if executable('clang')
+                \ | call asyncomplete#register_source(
                 \ asyncomplete#sources#clang#get_source_options({
                 \     'config': {
                 \         'clang_path': '/usr/bin/clang',
                 \     }
                 \ }))
-endif
-
-if executable('vscode-html-languageserver')
-    au User lsp_setup call lsp#register_server({
-                \     'name': 'html-languageserver',
-                \     'cmd': {server_info->[&shell, &shellcmdflag, 'vscode-html-languageserver --stdio']},
-                \     'whitelist': ['html'],
+                \ | endif
+augroup END
+augroup asyncomplete_necosyntax
+    au!
+    au User asyncomplete_setup call asyncomplete#register_source(
+                \ asyncomplete#sources#necosyntax#get_source_options({
+                \     'name': 'necosyntax',
+                \     'allowlist': ['*'],
+                \     'completor': function('asyncomplete#sources#necosyntax#completor'),
+                \ }))
+augroup END
+augroup asyncomplete_necovim
+    au!
+    au User asyncomplete_setup call asyncomplete#register_source(
+                \ asyncomplete#sources#necovim#get_source_options({
+                \     'name': 'necovim',
+                \     'allowlist': ['vim'],
+                \     'completor': function('asyncomplete#sources#necovim#completor'),
+                \ }))
+augroup END
+augroup asyncomplete_buffer
+    au!
+    au User asyncomplete_setup call asyncomplete#register_source(
+                \ asyncomplete#sources#buffer#get_source_options({
+                \     'name': 'buffer',
+                \     'allowlist': ['*'],
+                \     'completor': function('asyncomplete#sources#buffer#completor'),
+                \     'config': {
+                \        'max_buffer_size': 5000000,
+                \     },
+                \ }))
+augroup END
+augroup asyncomplete_file
+    au!
+    au User asyncomplete_setup call asyncomplete#register_source(
+                \ asyncomplete#sources#file#get_source_options({
+                \     'name': 'file',
+                \     'allowlist': ['*'],
+                \     'priority': 10,
+                \     'completor': function('asyncomplete#sources#file#completor')
+                \ }))
+augroup END
+augroup asyncomplete_gitcommit
+    au!
+    au User asyncomplete_setup call asyncomplete#register_source({
+                \     'name': 'gitcommit',
+                \     'whitelist': ['gitcommit'],
+                \     'priority': 10,
+                \     'completor': function('asyncomplete#sources#gitcommit#completor')
                 \ })
-endif
-if executable('vscode-css-languageserver')
-    au User lsp_setup call lsp#register_server({
-                \     'name': 'css-languageserver',
-                \     'cmd': {server_info->[&shell, &shellcmdflag, 'vscode-css-languageserver --stdio']},
-                \     'whitelist': ['css', 'less', 'sass'],
+augroup END
+augroup asyncomplete_zsh
+    au!
+    au User asyncomplete_setup if executable('zsh')
+                \ | call asyncomplete#register_source({
+                \     'name': 'zsh',
+                \     'allowlist': ['zsh'],
+                \     'triggers': {'*': ['-']},
+                \     'completor': function('asyncomplete#sources#zsh#completor')
                 \ })
-endif
-
-if executable('bash-language-server')
-    augroup LspBash
-        au!
-        au User lsp_setup call lsp#register_server({
-                    \     'name': 'bash-language-server',
-                    \     'cmd': {server_info->[&shell, &shellcmdflag, 'bash-language-server start']},
-                    \     'allowlist': ['sh', 'bash'],
-                    \ })
-    augroup END
-endif
-
-au User asyncomplete_setup call asyncomplete#register_source({
-            \     'name': 'gitcommit',
-            \     'whitelist': ['gitcommit'],
-            \     'priority': 10,
-            \     'completor': function('asyncomplete#sources#gitcommit#completor')
-            \ })
-
-au User asyncomplete_setup call asyncomplete#register_source({
-            \     'name': 'zsh',
-            \     'allowlist': ['zsh'],
-            \     'triggers': {'*': ['-']},
-            \     'completor': function('asyncomplete#sources#zsh#completor')
-            \ })
+                \ | endif
+augroup END
 
 function! s:on_lsp_buffer_enabled() abort
     setlocal omnifunc=lsp#complete
@@ -410,7 +529,11 @@ augroup END
 let g:user_emmet_mode='n'    "only enable normal mode functions.
 let g:user_emmet_leader_key='<Space>'
 let g:user_emmet_install_global = 0
-au FileType html,css,scss,less EmmetInstall
+
+augroup emmet
+    au!
+    au FileType html,css,scss,less EmmetInstall
+augroup END
 
 let g:airline_theme = 'onedark'
 
@@ -458,12 +581,13 @@ nnoremap <silent> <leader>w= <CMD>wincmd =<CR>
 nnoremap <silent> <leader>w+ <CMD>wincmd +<CR>
 nnoremap <silent> <leader>w- <CMD>wincmd -<CR>
 nnoremap <silent> <leader>wd <CMD>wincmd q<CR>
+nnoremap <silent> <Esc><Esc> <CMD>noh<CR>
 
 " Sorting
 vnoremap <silent> <leader>s :sort<CR>
 vnoremap <silent> <leader>S :sort!<CR>
 
-let s:paren_hl_on = 0
+let s:paren_hl_on = 1
 function s:Highlight_Matching_Paren()
     if s:paren_hl_on
         match none
@@ -510,7 +634,6 @@ au InsertEnter * match none
 let g:which_key_centered = 1
 let g:which_key_display_names = {
             \   ' ': 'SPC',
-            \   '<Esc>': 'ESC',
             \   '<CR>': 'RET',
             \   '<BS>': 'BS',
             \   '<C-H>': 'BS',
@@ -518,74 +641,80 @@ let g:which_key_display_names = {
             \   '<TAB>': 'TAB'
             \ }
 
-let g:which_key_map_n = {}
-let g:which_key_map_n.b = {
-            \   'name': '+Buffer',
-            \   'n': [':bNext', 'Goto Next Buffer'],
-            \   'p': [':bprev', 'Goto Previous Buffer'],
-            \   'd': [':bd', 'Close Buffer'],
-            \   'D': [':bd!', 'Close Buffer Forcefully'],
+let g:which_key_map_v = {
+            \    's': [':sort', 'Sort Selection'],
+            \    'S': [':sort', 'Sort Selection (Reversed)'],
             \ }
-let g:which_key_map_n.f = {
-            \   'name': '+File',
-            \   'i': {
-            \     'name': '+File Indent',
-            \     'r': [':%retab', 'Retab Whole File'],
-            \     'R': [':%retab', 'Retab Whole File (Forcefully)'],
-            \   },
-            \   'r': 'Prompt Replace (Whole File)',
-            \   's': [':w', 'Save File'],
-            \   'S': 'Save File (Prompt)',
-            \   't': {
-            \     'name': '+NERDTree',
-            \     't': [':NERDTreeFocus', 'Focus NERDTree'],
-            \     'q': [':NERDTreeClose', 'Close NERDTree'],
-            \   },
-            \   'v': {
-            \     'name': '+VimScript',
-            \     's': [':so $VIMRC', 'Source $MYVIMRC'],
-            \     'v': [':so %', 'Source Current File As VimScript'],
-            \     'e': {
-            \       'name': '+Edit Vim Files',
-            \       'e': [':ed $MYVIMRC', 'Edit In Same Buffer'],
-            \       't': [':tabnew $MYVIMRC', 'Edit In New Tab'],
-            \       's': [':split $MYVIMRC', 'Edit In Horizontal Split'],
-            \       'v': [':vsplit $MYVIMRC', 'Edit In Vertical Split'],
-            \     },
-            \   },
+let g:which_key_map_n = {
+            \    'b': {
+            \       'name': '+Buffer',
+            \       'n': [':bNext', 'Goto Next Buffer'],
+            \       'p': [':bprev', 'Goto Previous Buffer'],
+            \       'd': [':bd', 'Close Buffer'],
+            \       'D': [':bd!', 'Close Buffer Forcefully'],
+            \    },
+            \    'f': {
+            \       'name': '+File',
+            \       'i': {
+            \         'name': '+File Indent',
+            \         'r': [':%retab', 'Retab Whole File'],
+            \         'R': [':%retab', 'Retab Whole File (Forcefully)'],
+            \       },
+            \       'r': 'Prompt Replace (Whole File)',
+            \       's': [':w', 'Save File'],
+            \       'S': 'Save File (Prompt)',
+            \       't': {
+            \         'name': '+NERDTree',
+            \         't': [':NERDTreeFocus', 'Focus NERDTree'],
+            \         'q': [':NERDTreeClose', 'Close NERDTree'],
+            \       },
+            \       'v': {
+            \         'name': '+VimScript',
+            \         's': [':so $VIMRC', 'Source $MYVIMRC'],
+            \         'v': [':so %', 'Source Current File As VimScript'],
+            \         'e': {
+            \           'name': '+Edit Vim Files',
+            \           'e': [':ed $MYVIMRC', 'Edit In Same Buffer'],
+            \           't': [':tabnew $MYVIMRC', 'Edit In New Tab'],
+            \           's': [':split $MYVIMRC', 'Edit In Horizontal Split'],
+            \           'v': [':vsplit $MYVIMRC', 'Edit In Vertical Split'],
+            \         },
+            \       },
+            \    },
+            \    'q': {
+            \       'name': '+Quit',
+            \       'q': [':qa', 'Quit Vim'],
+            \       'Q': [':qa!', 'Quit Vim (Forcefully)'],
+            \    },
+            \    'P': {
+            \      'name': '+Plugins',
+            \      'u': [':PlugUpdate', 'Update Plugins'],
+            \      'U': [':PlugUpgrade', 'Upgrade vim-plug'],
+            \      'i': [':PlugInstall', 'Install Plugins'],
+            \      'c': [':PlugClean!', 'Clean Unused Plugins'],
+            \    },
+            \    't': {
+            \      'name': '+Tabs',
+            \      'A': [':tabnew', 'Open New Tab'],
+            \      'a': 'Open New Tab (Prompt)',
+            \      'D': [':tabc!', 'Close Tab Forcefully'],
+            \      'd': [':tabc', 'Close Tab'],
+            \      'n': [':tabN', 'Goto Next Tab'],
+            \      'p': [':tabp', 'Goto Previous Tab'],
+            \    },
+            \    'w': {
+            \        'name': '+Window',
+            \        's': {
+            \           'name': '+Split',
+            \           's': 'Split Buffer Horizontally (Prompt)',
+            \           'v': 'Split Buffer Vertically (Prompt)',
+            \           'S': [':split', 'Split Buffer Horizontally'],
+            \           'V': [':vsplit', 'Split Buffer Vertically'],
+            \           'n': [':wincmd w', 'Switch To Next Window'],
+            \        },
+            \    },
             \ }
-let g:which_key_map_n.q = {
-            \   'name': '+Quit',
-            \   'q': [':qa', 'Quit Vim'],
-            \   'Q': [':qa!', 'Quit Vim (Forcefully)'],
-            \ }
-let g:which_key_map_n.P = {
-            \   'name': '+Plugins',
-            \   'u': [':PlugUpdate', 'Update Plugins'],
-            \   'U': [':PlugUpgrade', 'Upgrade vim-plug'],
-            \   'i': [':PlugInstall', 'Install Plugins'],
-            \   'c': [':PlugClean!', 'Clean Unused Plugins'],
-            \ }
-let g:which_key_map_n.t = {
-            \   'name': '+Tabs',
-            \   'A': [':tabnew', 'Open New Tab'],
-            \   'a': 'Open New Tab (Prompt)',
-            \   'D': [':tabc!', 'Close Tab Forcefully'],
-            \   'd': [':tabc', 'Close Tab'],
-            \   'n': [':tabN', 'Goto Next Tab'],
-            \   'p': [':tabp', 'Goto Previous Tab'],
-            \ }
-let g:which_key_map_n.w = {
-            \   'name': '+Window',
-            \   's': {
-            \      'name': '+Split',
-            \      's': 'Split Buffer Horizontally (Prompt)',
-            \      'v': 'Split Buffer Vertically (Prompt)',
-            \      'S': [':split', 'Split Buffer Horizontally'],
-            \      'V': [':vsplit', 'Split Buffer Vertically'],
-            \      'n': [':wincmd w', 'Switch To Next Window'],
-            \   },
-            \ }
+
 call which_key#register(' ', 'g:which_key_map_n', 'n')
 
 hi default link WhichKey          Function

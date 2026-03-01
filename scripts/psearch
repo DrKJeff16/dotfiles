@@ -2,6 +2,8 @@
 
 # shellcheck disable=SC2207
 
+# set -x
+
 OPTIONS=":hLim:q:"
 MANAGER="pacman"
 ITMPFILE="$(mktemp "/tmp/psearch.$(date +%Y%m%d.%H%M%S).XXXX" --suffix=.in.log)"
@@ -10,6 +12,7 @@ MGR_START_RE=(
     "^core/.*"
     "^extra/.*"
     "^multilib/.*"
+    "^aur/.*"
 )
 MGR_EXCLUDE_RE=("\[installed.*\]")
 VALIDATED=0
@@ -43,18 +46,16 @@ die() {
     [[ -f "$ITMPFILE" ]] && command rm "$ITMPFILE"
     [[ -f "$OTMPFILE" ]] && command rm "$OTMPFILE"
 
+    set +x
     exit "$EC"
 }
 
 _cmd() {
     [[ $# -eq 0 ]] && return 127
-
     while [[ $# -gt 0 ]]; do
         ! command -v "$1" &> /dev/null && return 1
-
         shift
     done
-
     return 0
 }
 
@@ -67,15 +68,15 @@ __select_pager() {
             break
         fi
     done
-
     return "$EC"
 }
 
 # Print script usage
 usage() {
-    local TXT=()
     local EC=0
+    [[ $# -gt 0 ]] && EC=1
 
+    local TXT
     TXT=(
         "psearch: A filtered search tool for pacman and other yogurts"
         ""
@@ -83,7 +84,7 @@ usage() {
         "    -L                             Disable the use of paging (\`less\` is default)"
         "                                   (support for alternative pagers is pending)"
         ""
-        "    -m pacman|yay|paru             Select the command to be queried (pacman is default)"
+        "    -m pacman|yay                  Select the command to be queried (pacman is default)"
         ""
         "    -q <query>                     Add to query list the following argument"
         "                                   Query list can be appended to if using this option multiple times"
@@ -91,15 +92,12 @@ usage() {
         "    -i                             Search for installed packages instead"
     )
 
-    [[ $# -gt 0 ]] && EC=1
-
     die 0 "${TXT[@]}"
 }
 
 _valid_mgr() {
     if [[ $# -ge 1 ]]; then
         local CHOICE="$1"
-
         case "$CHOICE" in
             [Pp][Aa][Cc][Mm][Aa][Nn])
                 MANAGER="pacman"
@@ -111,10 +109,8 @@ _valid_mgr() {
                 MGR_EXCLUDE_RE=(
                     "\[installed.*\]"
                 )
-
                 return 0
                 ;;
-
             [Yy][Aa][Yy])
                 MANAGER="yay"
                 MGR_START_RE=(
@@ -125,10 +121,8 @@ _valid_mgr() {
                     "\(Orphaned.*\)"
                     "\(Out-of.*\)"
                 )
-
                 ! _cmd "$MANAGER" && die 1 "\`$MANAGER\` is not a command"
                 ;;
-
             [Pp][Aa][Rr][Uu])
                 MANAGER="paru"
                 MGR_START_RE=(
@@ -139,24 +133,21 @@ _valid_mgr() {
                     "\[Orphaned.*\]"
                     "\[Out-of.*\]"
                 )
-
                 ! _cmd "$MANAGER" && die 1 "\`$MANAGER\` is not a command"
                 ;;
-
             *) die 127 "\`$CHOICE\` is not a supported manager" ;;
         esac
     fi
-
     return 0
 }
 
 __is_pkg_name() {
     local L="$1"
-
     for REGEX in "${MGR_START_RE[@]}"; do
-        [[ $L =~ $REGEX ]] && return 0
+        if echo "$L" | grep -E -v "$REGEX" &> /dev/null; then
+            return 0
+        fi
     done
-
     return 1
 }
 
@@ -175,19 +166,14 @@ _pacman_exec() {
 }
 
 _aur_exec() {
-    local PRG="$1"
-
-    local RESULTS MID
-    RESULTS="$("$PRG" -aSs "${QUERY[@]}")"
-
+    local RESULTS
+    RESULTS="$(yay -Ss "${QUERY[@]}")"
     for E_RE in "${MGR_EXCLUDE_RE[@]}"; do
-        # echo -e "\t$(echo ${RESULTS} | wc)"
-        MID="$RESULTS"
-        RESULTS=$(echo "$MID" | grep -v -E "$E_RE") || die 1 "REGEX EXCLUSION FAILED"
+        local MID="$RESULTS"
+        RESULTS="$(echo "$MID" | grep -v -E "$E_RE")" || die 1 "REGEX EXCLUSION FAILED"
     done
 
     echo "$RESULTS" >| "$ITMPFILE" || die 1 "ERROR WRITING TO TEMP FILE!"
-
     return 0
 }
 
@@ -198,7 +184,9 @@ __filter_tmpfile() {
 
     IFS=$'\n' INDATA=($(cat "$ITMPFILE"))
 
-    [[ ${#INDATA[@]} -eq 0 ]] && die 5 "Why empty?"
+    if [[ ${#INDATA[@]} -eq 0 ]]; then
+        die 5 "Why empty?"
+    fi
 
     for LINE in "${INDATA[@]}"; do
         if __is_pkg_name "$LINE"; then
@@ -213,7 +201,6 @@ __filter_tmpfile() {
     done
 
     printf "%s\n" "${TXT[@]}" >| "$OTMPFILE"
-
     if [[ $USE_PAGER -eq 1 ]]; then
         "$DEFAULT_PAGER" "$OTMPFILE"
     else
@@ -237,15 +224,12 @@ while getopts $OPTIONS OP; do
 done
 
 [[ ${#QUERY[@]} -eq 0 ]] && die 3 "NO QUERY!"
-
 _valid_mgr "$MANAGER" || die 8 "Could not validate manager"
-
 __select_pager || die 7 "PAGER not found!"
 
 case "$MANAGER" in
     [Pp][Aa][Cc][Mm][Aa][Nn]) _pacman_exec && __filter_tmpfile ;;
     [Yy][Aa][Yy]) _aur_exec 'yay' && __filter_tmpfile ;;
-    [Pp][Aa][Rr][Uu]) _aur_exec 'paru' && __filter_tmpfile ;;
 esac
 
 die 0

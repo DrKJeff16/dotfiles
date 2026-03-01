@@ -22,7 +22,6 @@ GIT_OVERRIDES=(
     "bat"
     "hypr"
     "lazygit"
-    "suckless"
 )
 
 TARGETS=(
@@ -65,6 +64,7 @@ TARGETS=(
     "$HOME/.config/wireplumber"
     "$HOME/.config/xsettingsd"
     "$HOME/.config/yay"
+    "$HOME/.config/zathura"
     "$HOME/.env.d"
     "$HOME/.face"
     "$HOME/.gdbinit"
@@ -95,6 +95,7 @@ TARGETS=(
     "$HOME/.packages.list"
     "$HOME/.packages_foreign.list"
     "$HOME/.password-store"
+    "$HOME/.pypirc"
     "$HOME/.secrets"
     "$HOME/.spacemacs"
     "$HOME/.ssh"
@@ -341,9 +342,7 @@ __has_git() {
 
         NEW_TGTS+=("$T")
     done
-
     TARGETS=("${NEW_TGTS[@]}")
-
     return 0
 }
 
@@ -358,12 +357,10 @@ __filter() {
             ITEMS+=("$T")
         fi
     done
-
     TARGETS=("${ITEMS[@]}")
 
     __destroy_dups
     __has_git
-
     return 0
 }
 
@@ -398,12 +395,9 @@ method_select() {
             EXT=".7z"
             CMD="7z -mx=9 -mmt a"
             ;;
-        :)
-            die 2 "Aborting due to missing parameter for \`$MTD\`." ;;
-        *)
-            die 127 "Method unavailable" ;;
+        :) die 2 "Aborting due to missing parameter for \`$MTD\`." ;;
+        *) die 127 "Method unavailable" ;;
     esac
-
     CMD+=" ${TARGET_DIR}/${OUTPUT}${EXT}"
 }
 
@@ -412,12 +406,10 @@ __verify_dir() {
     [[ $# -eq 0 ]] && die 127 "[ERROR] No directory to verify!"
 
     local ARG="$1"
-
     if [[ -d "$ARG" ]]; then
         TARGET_DIR="$ARG"
         return 0
     fi
-
     die 1 "[ERROR] Not a valid directory \`$ARG\`"
 }
 
@@ -425,13 +417,11 @@ __append_targets() {
     local DIR_ARR
     local IFS
 
-    # NOTE: I love you 'https://stackoverflow.com/questions/10586153/how-to-split-a-string-into-an-array-in-bash'
+    # I love you 'https://stackoverflow.com/questions/10586153/how-to-split-a-string-into-an-array-in-bash'
     IFS=':' read -r -a DIR_ARR <<< "$1"
-
     for CHECK in "${DIR_ARR[@]}"; do
         __check_discard "$CHECK" && TARGETS+=("$CHECK")
     done
-
     return 0
 }
 
@@ -441,10 +431,7 @@ fi
 
 while getopts "$OPTIONS" OPTION; do
     case "$OPTION" in
-        c)
-            OVERRIDE_METHOD=1
-            NEW_METHOD="$OPTARG"
-            ;;
+        c) OVERRIDE_METHOD=1 ; NEW_METHOD="$OPTARG" ;;
         D) TARGET_DIR="$OPTARG" ;;
         a) APPENDED+=("$OPTARG") ;;
         v) VERBOSE=1 ;;
@@ -467,7 +454,6 @@ __verify_dir "$TARGET_DIR"
 __filter
 
 TARGET="${TARGET_DIR}/${OUTPUT}${EXT}"
-
 if [[ $VERBOSE -eq 1 ]]; then
     rm -fv "$TARGET" || die 1 "\`$TARGET\` couldn't be removed"
     sudo tar cJvf "$TARGET" "${TARGETS[@]}" --group="$TARGET_USER" --owner="$TARGET_USER" 2> /dev/null \
@@ -481,7 +467,7 @@ else
 fi
 
 sudo chown "${TARGET_USER}:${TARGET_USER}" "$TARGET" || die 4 "[ERROR] Permission setting failed"
-
 [[ $VERBOSE -eq 1 ]] && du -h "$TARGET"
 
 die 0
+# vim:ft=bash:ts=4:sts=4:sw=4:et:
