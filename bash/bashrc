@@ -15,6 +15,7 @@ export HISTFILESIZE=32500
 shopt -s histappend
 shopt -s expand_aliases
 
+
 [[ -d "$HOME/.build" ]] && export BUILDD="$HOME/.build"
 [[ -d "$HOME/.org" ]] && export ORGD="$HOME/.org"
 [[ -d "$HOME/.config" ]] && export CONFD="$HOME/.config"
@@ -37,35 +38,11 @@ _cmd() {
         return 127
     fi
 
-    local OPTS=":hv"
-    local VERBOSE=0
-    local CMDS=()
-    local EXES=()
-    local ARG
-    while getopts "$OPTS" ARG; do
-        case "$ARG" in
-            h) return 0 ;;
-            v) VERBOSE=$((VERBOSE + 1))   ;;
-            *)
-                command -v "$ARG" &> /dev/null || return 1
-                CMDS+=("$ARG")
-                EXES+=("$(command -v "$ARG" 2> /dev/null)")
-                ;;
-        esac
+    while [[ $# -gt 0 ]]; do
+        command -v "$1" &> /dev/null || return 1
         shift
     done
 
-    if [[ $VERBOSE -eq 1 ]]; then
-        printf "%s\n" "${CMDS[@]}"
-    elif [[ $VERBOSE -eq 2 ]]; then
-        printf "\`%s\` ==> OK\n" "${CMDS[@]}"
-    elif [[ $VERBOSE -ge 3 ]]; then
-        for I in $(seq 1 ${#CMDS[@]}); do
-            I=$((I - 1))
-            printf "\`%s\` ==> \`%s\` ==> OK\n" "${CMDS[I]}" "${EXES[I]}"
-        done
-        unset I
-    fi
     return 0
 }
 export -f _cmd

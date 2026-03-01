@@ -33,9 +33,17 @@ if [[ "$(whoami)" != "root" ]] && [[ $UID -ne 0 ]]; then
         'e4defrag' e4defrag 'sudo e4defrag' \
         'poweroff' poweroff 'sudo poweroff'
 
-    __cmd_alias_no_complete \
-        'reboot' reboot 'sudo reboot' \
-        'shutdown' Off 'sudo shutdown -h now'
+    if which 'countdown' &> /dev/null; then
+        __cmd_alias_no_complete \
+            'reboot' reboot 'countdown -s -n 3 && sudo reboot' \
+            'shutdown' Off 'countdown -s -n 3 && sudo shutdown -h now'
+
+    else
+        __cmd_alias_no_complete \
+            'reboot' reboot 'sudo reboot' \
+            'shutdown' Off 'sudo shutdown -h now'
+
+    fi
 
     __alias_complete_alias \
         smkdir 'sudo mkdir -v' \
@@ -165,8 +173,8 @@ __simple_alias \
     rmdir 'rmdir -v' \
     umount 'umount -v'
 
-if _cmd 'countdown'; then
-    __cmd_alias_no_complete 'shutdown' off 'countdown -s && shutdown -h now'
+if which 'countdown' &> /dev/null; then
+    __cmd_alias_no_complete 'shutdown' off 'countdown -s -n 3 && shutdown -h now'
 else
     __cmd_alias_no_complete 'shutdown' off 'shutdown -h now'
 fi
@@ -392,9 +400,12 @@ fi
 
 ! [[ -z $STEAM_DIR ]] && __alias_no_complete gosteam 'pd "$STEAM_DIR"'
 
-if _cmd 'vscodium'; then
-    __simple_alias code 'vscodium '
+__cmd_alias_no_complete \
+    'luarocks' upd_luarocks "for P in \$(luarocks list --local --outdated 2> /dev/null | tail -n +5  | grep -E '^[a-zA-Z0-9]'); do luarocks install --local \"\$P\" || break; done; unset P"
 
+__cmd_alias 'vscodium' code 'vscodium '
+
+if _cmd 'vscodium'; then
     export CODIUMRC="$HOME/.config/VSCodium/User/settings.json"
     if _file_readable_writeable "$CODIUMRC"; then
         __alias_no_complete edcodium 'vscodium "$CODIUMRC"'

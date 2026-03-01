@@ -78,7 +78,7 @@ __complete_gobld() {
                 SFX="${COMP_WORDS[COMP_CWORD - I]}/${SFX}"
             fi
 
-            I=$(( I + 1 ))
+            I=$((I + 1))
         done
 
         TARGET="$TARGET/$SFX"
@@ -111,7 +111,7 @@ complete -F __complete_gobld gobld
 __complete_goproj() {
     local TARGET="$HOME/Projects"
 
-    if [[ ${#COMP_WORDS[@]} -lt 2 ]] || ! [[ -d "$TARGET" ]] ; then
+    if [[ ${#COMP_WORDS[@]} -lt 2 ]] || ! [[ -d "$TARGET" ]]; then
         return
     fi
 
@@ -126,7 +126,7 @@ __complete_goproj() {
                 SFX="${COMP_WORDS[COMP_CWORD - I]}/${SFX}"
             fi
 
-            I=$(( I + 1 ))
+            I=$((I + 1))
         done
 
         TARGET="$TARGET/$SFX"
@@ -159,7 +159,7 @@ complete -F __complete_goproj goproj
 __complete_gocfg() {
     local TARGET="$HOME/.config"
 
-    if [[ ${#COMP_WORDS[@]} -lt 2 ]] || ! [[ -d "$TARGET" ]] ; then
+    if [[ ${#COMP_WORDS[@]} -lt 2 ]] || ! [[ -d "$TARGET" ]]; then
         return
     fi
 
@@ -174,7 +174,7 @@ __complete_gocfg() {
                 SFX="${COMP_WORDS[COMP_CWORD - I]}/${SFX}"
             fi
 
-            I=$(( I + 1 ))
+            I=$((I + 1))
         done
 
         TARGET="$TARGET/$SFX"
@@ -207,7 +207,7 @@ complete -F __complete_gocfg gocfg
 __complete_godocs() {
     local TARGET="$HOME/Documents"
 
-    if [[ ${#COMP_WORDS[@]} -lt 2 ]] || ! [[ -d "$TARGET" ]] ; then
+    if [[ ${#COMP_WORDS[@]} -lt 2 ]] || ! [[ -d "$TARGET" ]]; then
         return
     fi
 
@@ -222,7 +222,7 @@ __complete_godocs() {
                 SFX="${COMP_WORDS[COMP_CWORD - I]}/${SFX}"
             fi
 
-            I=$(( I + 1 ))
+            I=$((I + 1))
         done
 
         TARGET="$TARGET/$SFX"
@@ -253,6 +253,10 @@ __complete_godocs() {
 complete -F __complete_godocs godocs
 
 complete -A directory mkdir
+
+if _cmd 'pipenv'; then
+    eval "$(_PIPENV_COMPLETE=bash_source pipenv)"
+fi
 
 # Begin added by argcomplete
 source "/home/drjeff16/.local/share/virtualenvs/vim-eof-comment-lKeFXQ6D/lib/python3.13/site-packages/argcomplete/bash_completion.d/_python-argcomplete"
