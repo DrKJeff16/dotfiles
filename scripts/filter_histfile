@@ -6,12 +6,10 @@ from argparse import ArgumentParser, Namespace
 from io import TextIOWrapper
 from os import environ
 from os.path import expanduser, expandvars, isfile, realpath
-from sys import exit as Exit
 from sys import stderr as STDERR
 from sys import stdout as STDOUT
+import sys
 from typing import Any, Dict, List, Tuple
-
-import argcomplete as acp
 
 MAXSIZE = int(environ.get("HISTFILESIZE", "32500"))
 VERBOSE = False
@@ -30,27 +28,49 @@ def error(*msg, **kwargs) -> None:
 
 
 def die(code: int = 0, *msg, **kwargs) -> None:
-    """Kill the program with a given code, and print a message if given."""
+    """
+    Kill the program with a given code, and print a message if given.
+
+    Parameters
+    ----------
+    code : int, optional, default=0
+        The exit code.
+    *msg
+        The data to print if given.
+    **kwargs
+        Any extra args to pass to ``print()``.
+    """
     try:
         code = int(code)
     except Exception:
         code = 1
 
-    if msg:
-        end: str = kwargs.get("end", "\n")
-        sep: str = kwargs.get("sep", " ")
-        flush: bool = kwargs.get("flush", False)
+    end: str = kwargs.get("end", "\n")
+    sep: str = kwargs.get("sep", " ")
+    flush: bool = kwargs.get("flush", False)
 
+    if msg:
         if code != 0:
             error(*msg, end=end, sep=sep, flush=flush)
         else:
             print(*msg, end=end, sep=sep, flush=flush)
 
-    Exit(code)
+    sys.exit(code)
 
 
 def verb_print(verbose: bool, *data: object, **kwargs) -> None:
-    """Print if verbose is turned on"""
+    """
+    Print if verbose mode is enabled.
+
+    Parameters
+    ----------
+    verbose : bool
+        Boolean that indicates verbose mode state.
+    *data
+        The data to print.
+    **kwargs
+        Any extra args to pass to ``print()``.
+    """
     if not (verbose and data):
         return
 
@@ -73,6 +93,7 @@ def get_histfile_path(p: str = "") -> str:
     Returns
     -------
     str
+        The histfile path.
     """
     p = p.strip(" ").strip("\n") if p is str else ""
 
@@ -90,62 +111,91 @@ def get_histfile_path(p: str = "") -> str:
 
 
 def line_strip(data: str) -> str:
-    """Strip data string"""
-    if data is not str:
-        try:
-            data = str(data)
-        except Exception:
-            raise TypeError("(filter_histfile - line_strip): data unavailable!")
+    """
+    Strip data string
 
+    Parameters
+    ----------
+    data : str
+        Any string data.
+
+    Returns
+    -------
+    str
+        Stripped line data.
+    """
+    data = str(data) if data is not str else data
     return data.rstrip("\n").strip(" ").rstrip("/")
 
 
-def filter(verbose: bool, f: TextIOWrapper) -> str:
-    """Filter histfile"""
-    if not f.readable():
-        raise ValueError("(filter_histfile - filter): file not readable!")
+def filter_data(verbose: bool, f: TextIOWrapper) -> str:
+    """
+    Filter file data.
 
-    buffer = list()
+    Parameters
+    ----------
+    verbose : bool
+        Whether verbose mode is enabled or not.
+    f : io.TextIOWrapper
+        The object returned by ``open()``.
+
+    Returns
+    -------
+    str
+        The filtered data from the given file.
+    """
+    if not f.readable():
+        raise IOError("(filter_histfile - filter_data): file not readable!")
+
+    buffer: List[str] = list()
     data = line_strip(f.readline())
     while data != "":
         buffer.append(data)
         data = line_strip(f.readline())
 
     buffer.reverse()
-    new_buffer = list()
+    new_buffer: List[str] = list()
 
     # Remove duplicates
     for v in buffer:
         if v not in new_buffer:
             new_buffer.append(v)
 
-    del buffer
-
+    buffer = list()
     new_buffer.reverse()
     for i, v in enumerate(new_buffer):
-        if v in ("\n", "") or len(v) <= 1:
-            new_buffer.pop(i)
-        elif v[-1] != "\n":
-            new_buffer[i] += "\n"
+        if v[-1] != "\n":
+            v += "\n"
+
+        if v not in ("\n", "") and len(v) > 1:
+            buffer.append(v)
 
     # Keep lines up to a certain max
-    if len(new_buffer) > MAXSIZE:
-        new_buffer = new_buffer.copy()[-MAXSIZE:]
+    buffer = buffer.copy()[-MAXSIZE:] if len(buffer) > MAXSIZE else buffer
 
-    res = "".join(new_buffer)
-
-    if res[-1] != "\n":
-        res += "\n"
+    res = "".join(buffer)
+    res = res + ("\n" if res[-1] != "\n" else "")
 
     verb_print(verbose, res)
     return res
 
 
-def gen_args(
-        args: List[List[str]],
-        opts: List[Tuple[Dict[str, Any], acp.completers.FilesCompleter | None]]
-) -> Namespace:
-    """Generate argparse arguments from special dict."""
+def gen_args(args: List[List[str]], opts: List[Dict[str, Any]]) -> Tuple[ArgumentParser, Namespace]:
+    """
+    Generate argparse arguments from special dict.
+
+    Parameters
+    ----------
+    args : List[List[str]]
+        A list of string lists.
+    opts : List[Dict[str, Any]]
+        A list of the argument options for the corresponding ``args`` element.
+
+    Returns
+    -------
+    Namespace
+        The argparse ``Namespace`` object.
+    """
     if not (args and opts):
         raise AssertionError("(filter_histfile - gen_args): Bad arguments!")
 
@@ -153,20 +203,10 @@ def gen_args(
         prog="filter_histfile",
         description="Filter histfile and get rid of duplicates"
     )
-    completer = False
     for arg, dest in zip(args, opts):
-        d = dest[0]
-        c = dest[1]
-        if not c or c is None:
-            parser.add_argument(*arg, **d)
-        else:
-            completer = True
-            parser.add_argument(*arg, **d).completer = c
+        parser.add_argument(*arg, **dest)
 
-    if completer:
-        acp.autocomplete(parser)
-
-    return parser.parse_args()
+    return parser, parser.parse_args()
 
 
 def main() -> int:
@@ -176,54 +216,35 @@ def main() -> int:
         ["-v", "--verbose"],
         ["-f", "--file"],
     ]
-    kwargs: List[Tuple[Dict[str, Any], acp.completers.FilesCompleter | None]] = [
-        (
-            {
-                "action": "store_true",
-                "help": "Verbose mode",
-                "dest": "verbose",
-                "required": False,
-            },
-            None,
-        ),
-        (
-
-            {
-                "help": "Absolute path to histfile",
-                "dest": "fpath",
-                "default": "",
-                "nargs": 1,
-            },
-            acp.completers.FilesCompleter(),
-        )
+    kwargs: List[Dict[str, Any]] = [
+        {
+            "action": "store_true",
+            "help": "Verbose mode",
+            "dest": "verbose",
+            "required": False,
+        },
+        {
+            "help": "Absolute path to histfile",
+            "dest": "fpath",
+            "default": "",
+            "nargs": 1,
+        },
     ]
 
-    args = gen_args(dests, kwargs)
+    parser, args = gen_args(dests, kwargs)
     fpath: str = str(args.fpath) if args.fpath is not str else args.fpath
     verbose: bool = args.verbose
 
-    try:
-        histfile = open(get_histfile_path(fpath), "r")
+    with open(get_histfile_path(fpath), "r") as histfile:
         verb_print(verbose, f"Opened histfile `{fpath}`")
-        new_data = filter(verbose, histfile)
-        histfile.close()
+        new_data = filter_data(verbose, histfile)
 
-        if new_data != "":
-            histfile = open(get_histfile_path(fpath), "w")
+    if new_data != "":
+        with open(get_histfile_path(fpath), "w") as histfile:
             histfile.write(new_data)
-            histfile.close()
-
-    except ValueError:
-        code = 4
-    except FileNotFoundError:
-        code = 127
-    except KeyboardInterrupt:
-        code = 2
-    except Exception:
-        code = 1
 
     return code
 
 
 if __name__ == "__main__":
-    Exit(main())
+    sys.exit(main())
