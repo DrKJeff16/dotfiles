@@ -1,4 +1,6 @@
-json=true
+json=false
+editor=nvim
+long=true
 browser=false
 prefix=~/.local
 foreground-scripts=true
