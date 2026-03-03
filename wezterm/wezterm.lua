@@ -1,39 +1,47 @@
 ---@type Wezterm
-local wezterm = require "wezterm"
+local wezterm = require("wezterm")
 local config = wezterm.config_builder()
 local mux = wezterm.mux
 local act = wezterm.action
+local nf = wezterm.nerdfonts
 
 ---@param str string
+---@return string cr_string
 local function carriage_return(str)
   return ("%s\r"):format(str)
 end
 
 ---@param fg_procc_name string
+---@return boolean shell
 local function is_shell(fg_procc_name)
   local shell_names = { "bash", "zsh", "fish", "sh", "ksh", "dash" }
   local process = fg_procc_name:match("[^/\\]+$") or fg_procc_name ---@type string
+  local res = false
   for _, shell in ipairs(shell_names) do
     if process == shell then
-      return true
+      res = true
+      break
     end
   end
-  return false
+
+  return res
 end
 
+---@type weztermConfig
+local wezterm_config_nvim =
+  wezterm.plugin.require("https://github.com/winter-again/wezterm-config.nvim")
+
 wezterm.on("user-var-changed", function(window, _, name, value)
-  if not wezterm_config_nvim then ---@diagnostic disable-line:undefined-global
+  if not wezterm_config_nvim then
     return
   end
 
-  local overrides = window:get_config_overrides() or {}
-
-  ---@diagnostic disable-next-line:undefined-global
-  overrides = wezterm_config_nvim.override_user_var(overrides, name, value)
-  window:set_config_overrides(overrides)
+  window:set_config_overrides(
+    wezterm_config_nvim.override_user_var(window:get_config_overrides() or {}, name, value)
+  )
 end)
 
-wezterm.on("format-tab-title", function(tab, _, _, _)
+wezterm.on("format-tab-title", function(tab)
   return ("%s [%s]"):format(tab.active_pane.title, (tab.active_pane.user_vars.PROG or ""))
 end)
 
@@ -56,13 +64,14 @@ wezterm.on("open-uri", function(_, pane, uri)
     local edit_cmd = ('%s "$_f"'):format(
       url.fragment ~= nil and (("%s +%s"):format(editor, url.fragment)) or editor
     )
-    local cmd = '_f="'
-      .. url.file_path
-      .. '";'
-      .. ' { test -d "$_f" && { cd "$_f" ; ls -Ap --hyperlink --group-directories-first; }; }'
-      .. ' || { test "$(file --brief --mime-type "$_f" | cut -d/ -f1 || true)" = "text" && '
-      .. edit_cmd
-      .. "; }; echo"
+    local ls_args = "-Ap --hyperlink --group-directories-"
+    local file_cmd = [[file --brief --mime-type "$_f" | cut -d/ -f1 || true]]
+    local cmd = ([[_f="%s"; { test -d "$_f" && { cd "$_f"; ls %s; }; } || { test "$(%s)" == "text" && %s; }; echo]]):format(
+      url.file_path,
+      ls_args,
+      file_cmd,
+      edit_cmd
+    )
 
     pane:send_text(carriage_return(cmd))
     return false
@@ -77,7 +86,7 @@ wezterm.on("open-uri", function(_, pane, uri)
     url.file_path,
   })
   if not success then
-    return
+    return false
   end
 
   if stdout:find("directory") then
@@ -103,22 +112,21 @@ wezterm.on("gui-startup", function(cmd)
 end)
 
 ---Maximize all displayed windows on startup
-wezterm.on("gui-attached", function(_)
+wezterm.on("gui-attached", function()
   for _, window in ipairs(mux.all_windows()) do
     window:gui_window():maximize()
   end
 end)
 
-wezterm.on("window-focus-changed", function(window, _)
+wezterm.on("window-focus-changed", function(window)
   wezterm.log_info(
     ("the focus state of %s changed to %s"):format(window:window_id(), window:is_focused())
   )
 end)
 
-wezterm.on("window-config-reloaded", function(window, _)
+wezterm.on("window-config-reloaded", function(window)
   wezterm.log_info(("the config was reloaded for window %s"):format(window:window_id()))
 end)
-
 
 config.launch_menu = { { args = { "top" } }, { label = "Bash", args = { "bash", "-l" } } }
 config.window_background_opacity = 1.0
@@ -260,15 +268,29 @@ table.insert(config.hyperlink_rules, {
   format = "https://www.github.com/$1/$3",
 })
 
----@type weztermConfig
-local wezterm_config_nvim =
-  wezterm.plugin.require("https://github.com/winter-again/wezterm-config.nvim")
-
-wezterm.on("user-var-changed", function(window, _, name, value)
-  local overrides = window:get_config_overrides() or {}
-  overrides = wezterm_config_nvim.override_user_var(overrides, name, value)
-  window:set_config_overrides(overrides)
-end)
+---@type BarWezterm
+local bar = wezterm.plugin.require("https://github.com/adriankarlen/bar.wezterm")
+bar.apply_to_config(config, {
+  position = "top",
+  max_width = 100,
+  padding = { left = 0, right = 0, tabs = { left = 0, right = 1 } },
+  separator = {
+    space = 2,
+    left_icon = nf.fa_long_arrow_right,
+    right_icon = nf.fa_long_arrow_left,
+    field_icon = nf.indent_line,
+  },
+  modules = {
+    clock = { enabled = true, icon = nf.md_calendar_clock, format = "%H:%M:%S", color = 3 },
+    workspace = { enabled = true, icon = nf.cod_window, color = 2 },
+    leader = { enabled = true, icon = nf.oct_rocket, color = 5 },
+    cwd = { enabled = false },
+    zoom = { enabled = false },
+    pane = { enabled = true, icon = nf.cod_multiple_windows, color = 6 },
+    username = { enabled = true, icon = nf.fa_user, color = 7 },
+    hostname = { enabled = false },
+  },
+})
 
 return config
 -- vim: set ts=2 sts=2 sw=2 et ai si sta:
