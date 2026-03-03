@@ -2,7 +2,7 @@
 	"aururl": "https://aur.archlinux.org",
 	"aurrpcurl": "https://aur.archlinux.org/rpc?",
 	"buildDir": "/home/drjeff16/.cache/yay",
-	"editor": "",
+	"editor": "nvim",
 	"editorflags": "",
 	"makepkgbin": "makepkg",
 	"makepkgconf": "",
