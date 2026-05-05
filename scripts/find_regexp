@@ -1,115 +1,207 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python3
+# -*- coding: utf8 -*-
+"""List all files matching the given regex, per file extension."""
+import re
+import sys
+from argparse import ArgumentParser, Namespace
+from io import TextIOWrapper
+from os import walk
+from os.path import expanduser, isfile, realpath
+from sys import stderr, stdout
+from typing import Any, Dict, List, Tuple, TypedDict
 
-#
-# Print all Lua files containing the specified regex
-#
+import argcomplete as ac
 
-set -o pipefail
 
-[[ $# -eq 0 ]] && exit 127
+class ArgData(TypedDict):
+    """Data to be passed to the argument parser."""
 
-EXTENSIONS=()
-QUERY=""
-TXT=()
+    args: List[str]
+    kwargs: Dict[str, Any]
+    completer: ac.DirectoriesCompleter | None
 
-OPTIONS=":he:q:"
 
-error() {
-    local TXT=("$@")
-    printf "%s\n" "${TXT[@]}" >&2
-    return 0
-}
+def error(*msg, **kwargs) -> None:
+    """Print msg to stderr."""
+    if not msg:
+        return
 
-# Kill the execution. By default it exits with code `1`.
-# Usage: usage [[N] [text] [text] [...] ...]
-die() {
-    local EC=0
-    if [[ $# -ge 1 ]]; then
-        if [[ "$1" =~ ^-?[1-9]?[0-9]+$ ]]; then
-            EC=$1
-            shift
-        fi
-    fi
-    if [[ $# -gt 0 ]]; then
-        local TXT=("$@")
-        if [[ $EC -eq 0 ]]; then
-            printf "%s\n" "${TXT[@]}"
-        else
-            error "${TXT[@]}"
-        fi
-    fi
+    end: str = kwargs.get("end", "\n")
+    sep: str = kwargs.get("sep", " ")
+    flush: bool = kwargs.get("flush", False)
 
-    exit "$EC"
-}
+    print(*msg, end=end, sep=sep, flush=flush, file=stderr)
 
-# Print help message
-#
-# Usage:
-#   usage [NUM] [<text> [<text>[...]]]
-usage() {
-    local EC=0
-    local TXT=()
-    if [[ "$1" =~ ^(0|-?[1-9][0-9]*)$ ]]; then
-        EC="$1"
-        shift
-    fi
 
-    while [[ $# -gt 0 ]]; do
-        TXT+=("$1")
-        shift
-    done
+def die(code: int = 0, *msg, **kwargs) -> None:
+    """
+    Kill the program with a given code, and print a message if given.
 
-    if [[ ${#TXT[@]} -gt 0 ]] && [[ -n "${TXT[${#TXT[@]} - 1]}" ]]; then
-        TXT+=("")
-    fi
-    TXT+=(
-        "  usage: find_regexp [-h] -q <QUERY> -e <EXTENSION> [-e <EXTENSION> [-e ...]]"
-        ""
-        "     -h                  Prints this help message"
-        "     -q <QUERY>          The query (MUST BE IN EXTENDED REGEX FORMAT)"
-        "     -e <EXTENSION>      The file extension to analyze."
-        "                         Can be passed multiple times to analyze different files"
-        ""
+    Parameters
+    ----------
+    code : int, optional, default=0
+        The exit code.
+    *msg
+        The data to print if given.
+    **kwargs
+        Any extra args to pass to ``print()``.
+    """
+    try:
+        code = int(code)
+    except Exception:
+        code = 1
+
+    end: str = kwargs.get("end", "\n")
+    sep: str = kwargs.get("sep", " ")
+    flush: bool = kwargs.get("flush", False)
+
+    if msg:
+        if code != 0:
+            error(*msg, end=end, sep=sep, flush=flush)
+        else:
+            print(*msg, end=end, sep=sep, flush=flush)
+
+    sys.exit(code)
+
+
+def search_file(path: str, query: re.Pattern[str]) -> Tuple[bool, int]:
+    """Search query inside the given file."""
+    file = open(path, "r")
+    data: str = file.read()
+    file.close()
+
+    return query.search(data) is not None, len(query.findall(data))
+
+
+def find_files(fexts: List[str], dir: str = ".") -> List[str]:
+    """Find all the matching file extensions."""
+    directory: str
+    dirnames: List[str]
+    filenames: List[str]
+    matches: List[str] = list()
+    for directory, dirnames, filenames in walk(dir, followlinks=False):
+        for file in filenames:
+            if "." not in file:
+                continue
+
+            file_split = file.split(".")
+            for fext in fexts:
+                if file_split[-1] == fext:
+                    matches.append(f"{directory}/{file}")
+                    break
+
+    return matches
+
+
+def gen_args(data: List[ArgData]) -> Tuple[ArgumentParser, Namespace]:
+    """
+    Generate argparse arguments from special dict.
+
+    Parameters
+    ----------
+    args : List[List[str]]
+        A list of string lists.
+    opts : List[Dict[str, Any]]
+        A list of the argument options for the corresponding ``args`` element.
+
+    Returns
+    -------
+    parser : ArgumentParser
+        The ``argparse`` argument parser object.
+    ns : Namespa
+        The argparse ``Namespace`` object.
+    """
+    if not data:
+        raise AssertionError("(find_regexp - gen_args): Bad arguments!")
+
+    parser = ArgumentParser(
+        prog="find_regexp",
+        description="List all files matching the given regex, per file extension"
     )
-    die "$EC" "${TXT[@]}"
-}
+    for d in data:
+        if d["completer"]:
+            parser.add_argument(*d["args"], **d["kwargs"]
+                                ).completer = d["completer"]
+        else:
+            parser.add_argument(*d["args"], **d["kwargs"])
 
-search_qry() {
-    local EXTENSION="$1"
-    local IFS
-    local FPATHS
-
-    IFS=$'\n' FPATHS=($(fd --type f --full-path ./ --extension "${EXTENSION}"))
-    for F in "${FPATHS[@]}"; do
-        if grep -E "$QUERY" "$F" &> /dev/null; then
-            TXT+=("$F")
-        fi
-    done
-}
-
-while getopts "$OPTIONS" OPTION; do
-    case "$OPTION" in
-        h) usage 0 ;;
-        e) EXTENSIONS+=("${OPTARG}") ;;
-        q) QUERY="${OPTARG}" ;;
-        :) usage 1 ;;
-        ?) usage 1 ;;
-        *) usage 1 ;;
-    esac
-done
-
-[[ -z "$QUERY" ]] && die 2
-[[ ${#EXTENSIONS[@]} -eq 0 ]] && EXTENSIONS=("lua")
+    return parser, parser.parse_args()
 
 
-for EXT in "${EXTENSIONS[@]}"; do
-    search_qry "$EXT" || die 1
-done
+def main() -> int:
+    """Execute main workflow."""
+    parser_data: List[ArgData] = [
+        ArgData(
+            args=["directory"],
+            kwargs={
+                "default": None,
+                "help": "The target directory",
+                "metavar": "DIRECTORY",
+                "nargs": "?",
+            },
+            completer=ac.DirectoriesCompleter
+        ),
+        ArgData(
+            args=["-c", "--count"],
+            kwargs={
+                "action": "store_true",
+                "required": False,
+                "dest": "count",
+                "help": "Whether to print how many matches were found for each file",
+            },
+            completer=None
+        ),
+        ArgData(
+            args=["-e", "--extensions"],
+            kwargs={
+                "action": "extend",
+                "default": [],
+                "dest": "extensions",
+                "help": "The file extensions to search through",
+                "metavar": "FEXT",
+                "nargs": "+",
+            },
+            completer=None
+        ),
+        ArgData(
+            args=["-q", "--query"],
+            kwargs={
+                "dest": "query",
+                "help": "The regex query to search for",
+                "metavar": "QUERY",
+                "nargs": 1,
+                "type": str,
+                "required": True,
+            },
+            completer=None
+        ),
+    ]
 
-if [[ ${#TXT[@]} -eq 0 ]]; then
-    die 1
-fi
+    parser, ns = gen_args(parser_data)
 
-printf "%s\n" "${TXT[@]}" | sort
+    query: str = ns.query[0]
+    directory: str = realpath(expanduser(
+        ns.directory)) if ns.directory is not None else "."
+    extensions: List[str] = ns.extensions
+    count: bool = ns.count
+    if len(extensions) == 0:
+        die(127, "No extensions given!")
 
-die 0
+    files = find_files(extensions, dir=directory)
+    if len(files) == 0:
+        die(1, "No extensions found!")
+
+    if query == "":
+        die(1, "No query given!")
+
+    comp_query: re.Pattern[str] = re.compile(query)
+    for file in files:
+        matched, n_matches = search_file(file, comp_query)
+        if matched:
+            print(file if not count else f"{file}   ==>   {n_matches}")
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

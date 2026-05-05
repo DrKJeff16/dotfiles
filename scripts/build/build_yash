@@ -1,19 +1,13 @@
 #!/usr/bin/env bash
 
 _cmd() {
-    [[ $# -eq 0 ]] && return 127
-
+    [[ $# -eq 0 ]] && return 1
     while [[ $# -gt 0 ]]; do
-        if ! command -v "$1" &> /dev/null; then
-            return 1
-        fi
-
+        ! command -v "$1" &> /dev/null && return 1
         shift
     done
-
     return 0
 }
-
 
 if ! _cmd 'make' || ! [[ -d ./.git ]] || ! [[ -x ./configure ]]; then
     exit 127
@@ -21,7 +15,7 @@ fi
 
 export CC=gcc
 export CXX=g++
-export CFLAGS='-O2 -march=znver3 -pipe -D_GNU_SOURCE -U_FORTIFY_SOURCE -DNDEBUG'
+export CFLAGS='-O2 -march=znver3 -pipe -D_GNU_SOURCE -U_FORTIFY_SOURCE -DNDEBUG -flto'
 
 ./configure \
     --enable-array \

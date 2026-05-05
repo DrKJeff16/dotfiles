@@ -5,7 +5,6 @@ set -o pipefail -o errexit -o noclobber
 OPTIONS=":hvD:c:o:a:"
 
 TARGET_DIR="$HOME/Documents"
-! [[ -d "$TARGET_DIR" ]] && TARGET_DIR="$(pwd)"
 OUTPUT="env"
 EXT=".tar.xz"
 CMD=""
@@ -33,15 +32,13 @@ TARGETS=(
     "$HOME/.bash_profile"
     "$HOME/.bashrc"
     "$HOME/.bin"
-    "$HOME/.build/AUR/clean_xanmod"
     "$HOME/.build/build_alacritty"
+    "$HOME/.build/build_fastfetch"
     "$HOME/.build/build_hyprland"
     "$HOME/.build/build_nvim"
     "$HOME/.build/build_vim"
     "$HOME/.build/shells/build_yash"
-    "$HOME/.build/suckless"
     "$HOME/.cache/crontab"
-    "$HOME/.condarc"
     "$HOME/.config/alacritty"
     "$HOME/.config/bat"
     "$HOME/.config/chadwm"
@@ -72,11 +69,11 @@ TARGETS=(
     "$HOME/.gnupg"
     "$HOME/.gtkrc-2.0"
     "$HOME/.gtkrc-2.0.mine"
+    "$HOME/.icons"
     "$HOME/.inputrc"
     "$HOME/.librewolf/installs.ini"
     "$HOME/.librewolf/librewolf.overrides.cfg"
     "$HOME/.librewolf/profiles.ini"
-    "$HOME/.local/share/applications"
     "$HOME/.local/share/fontconfig"
     "$HOME/.local/share/fonts"
     "$HOME/.local/share/man"
@@ -166,14 +163,12 @@ TARGETS=(
     "/etc/wireplumber"
 )
 
-# Print args to `/dev/stderr`
 error() {
     local TXT=("$@")
     printf "%s\n" "${TXT[@]}" >&2
     return 0
 }
 
-# Print args to `/dev/stdout` IF program runs on verbose mode
 verb_echo() {
     if [[ $VERBOSE -eq 1 ]]; then
         local TXT=("$@")
@@ -183,7 +178,6 @@ verb_echo() {
     return 0
 }
 
-# Print args to `/dev/stderr` IF program runs on verbose mode
 verb_error() {
     if [[ $VERBOSE -eq 1 ]]; then
         local TXT=("$@")
@@ -193,8 +187,6 @@ verb_error() {
     return 0
 }
 
-# Kill the execution. By default it exits with code `1`.
-# Usage: die [[N] [[text] [...]]]
 die() {
     local EC=1
 
@@ -215,25 +207,17 @@ die() {
     exit "$EC"
 }
 
-# Check if ALL the given programs exist in environment
 _cmd() {
     [[ $# -eq 0 ]] && return 127
 
-    local EC=0
-
     while [[ $# -gt 0 ]]; do
-        if ! command -v "$1" &> /dev/null; then
-            EC=1
-            break
-        fi
-
+        ! command -v "$1" &> /dev/null && return 1
         shift
     done
 
-    return "$EC"
+    return 0
 }
 
-# TODO: Write `usage`.
 usage() {
     local TXT=()
     local EC=0
@@ -241,15 +225,17 @@ usage() {
     [[ "$1" =~ ^(0|-?[1-9][0-9]*)$ ]] && EC="$1"
 
     TXT=(
-        "env_compress: A boring user environment backup tool"
+        "envc: A boring user environment backup tool"
         ""
         "        -h                                              Prints this message, exits successfully"
         ""
-        "        -c [t](xz|gz|bz2)|zip|7z|rar                    Selects a compression method. If not a"
-        "                                                        valid one, aborts with error"
         "        -a /path/to/target1[:/path/to/target2[:...]]    Appends new targets in a colon-separated"
         "                                                        format. If any target is invalid it'll be"
         "                                                        ignored"
+        ""
+        "        -c [t](xz|gz|bz2)|zip|7z|rar                    Selects a compression method. If not a"
+        "                                                        valid one, aborts with error"
+        ""
     )
 
     die "$EC" "${TXT[@]}"
@@ -295,7 +281,6 @@ __destroy_dups() {
     done
 
     TARGETS=("${NEW_TGTS[@]}")
-
     return 0
 }
 
@@ -325,13 +310,11 @@ __check_discard() {
     fi
 
     verb_echo "[DEBUG] Adding \`$T\` to targets"
-
     return 0
 }
 
 __has_git() {
     local NEW_TGTS=()
-
     for T in "${TARGETS[@]}"; do
         if [[ -d "$T" ]] && [[ -n "$(find "$T" -type d -regex '^.*/.git/.*$' 2> /dev/null)" ]]; then
             if ! __in_arr "GIT_OVERRIDES" "$(basename "$T")"; then
@@ -348,9 +331,7 @@ __has_git() {
 
 __filter() {
     local ITEMS=()
-
     for T in "${TARGETS[@]}"; do
-        # If target is a symlink
         ! __check_discard "$T" && continue
 
         if [[ -f "$T" ]] || [[ -d "$T" ]]; then
@@ -368,19 +349,18 @@ method_select() {
     [[ $# -eq 0 ]] && die 1
 
     local MTD="$1"
-
     case "$MTD" in
-        [Tt][Xx][Zz]|[Xx][Zz])
+        [Tt][Xx][Zz] | [Xx][Zz])
             ! _cmd 'tar' 'xz' && die 127 "\`xz\` and/or \`tar\` are not installed"
             EXT=".tar.xz"
             CMD="tar cJvf --group=$TARGET_USER --owner=$TARGET_USER"
             ;;
-        [Tt][Gg][Zz]|[Gg][Zz])
+        [Tt][Gg][Zz] | [Gg][Zz])
             ! _cmd 'tar' 'gzip' && die 127 "\`gzip\` and/or \`tar\` are not installed"
             EXT=".tar.gz"
             CMD="tar czvf --group=$TARGET_USER --owner=$TARGET_USER"
             ;;
-        [Tt][Bb][Zz]2|[Bb][Zz]2)
+        [Tt][Bb][Zz]2 | [Bb][Zz]2)
             ! _cmd 'tar' 'bzip2' && die 127 "\`bzip2\` and/or \`tar\` are not installed"
             EXT=".tar.bz2"
             CMD="tar cjvf --group=$TARGET_USER --owner=$TARGET_USER"
@@ -390,7 +370,7 @@ method_select() {
             EXT=".zip"
             CMD="zip -r -9"
             ;;
-        7[Zz]|7[Zz][Ii][Pp]|[Pp]7[Zz][Ii][Pp])
+        7[Zz] | 7[Zz][Ii][Pp] | [Pp]7[Zz][Ii][Pp])
             ! _cmd '7z' && die 127 "\`7z\` and/or \`tar\` are not installed"
             EXT=".7z"
             CMD="7z -mx=9 -mmt a"
@@ -398,19 +378,18 @@ method_select() {
         :) die 2 "Aborting due to missing parameter for \`$MTD\`." ;;
         *) die 127 "Method unavailable" ;;
     esac
+
     CMD+=" ${TARGET_DIR}/${OUTPUT}${EXT}"
+    return 0
 }
 
 # Verify the existance of the `Target Directory"
 __verify_dir() {
     [[ $# -eq 0 ]] && die 127 "[ERROR] No directory to verify!"
+    ! [[ -d "$1" ]] && die 1 "[ERROR] Not a valid directory \`$1\`"
 
-    local ARG="$1"
-    if [[ -d "$ARG" ]]; then
-        TARGET_DIR="$ARG"
-        return 0
-    fi
-    die 1 "[ERROR] Not a valid directory \`$ARG\`"
+    TARGET_DIR="$1"
+    return 0
 }
 
 __append_targets() {
@@ -431,7 +410,10 @@ fi
 
 while getopts "$OPTIONS" OPTION; do
     case "$OPTION" in
-        c) OVERRIDE_METHOD=1 ; NEW_METHOD="$OPTARG" ;;
+        c)
+            NEW_METHOD="$OPTARG"
+            OVERRIDE_METHOD=1
+            ;;
         D) TARGET_DIR="$OPTARG" ;;
         a) APPENDED+=("$OPTARG") ;;
         v) VERBOSE=1 ;;
@@ -453,21 +435,26 @@ fi
 __verify_dir "$TARGET_DIR"
 __filter
 
-TARGET="${TARGET_DIR}/${OUTPUT}${EXT}"
 if [[ $VERBOSE -eq 1 ]]; then
-    rm -fv "$TARGET" || die 1 "\`$TARGET\` couldn't be removed"
-    sudo tar cJvf "$TARGET" "${TARGETS[@]}" --group="$TARGET_USER" --owner="$TARGET_USER" 2> /dev/null \
+    rm -fv "${TARGET_DIR}/${OUTPUT}${EXT}" || die 1 "\`${TARGET_DIR}/${OUTPUT}${EXT}\` couldn't be removed"
+    sudo tar cJvf "${TARGET_DIR}/${OUTPUT}${EXT}" "${TARGETS[@]}" \
+        --group="$TARGET_USER" \
+        --owner="$TARGET_USER" 2> /dev/null \
         || die 1 "[ERROR] Compression failed"
 
 else
-    rm -f "$TARGET" || die 1 "\`$TARGET\` couldn't be removed"
-    sudo tar cJf "$TARGET" "${TARGETS[@]}" --group="$TARGET_USER" --owner="$TARGET_USER" 2> /dev/null \
+    rm -f "${TARGET_DIR}/${OUTPUT}${EXT}" || die 1 "\`${TARGET_DIR}/${OUTPUT}${EXT}\` couldn't be removed"
+    sudo tar cJf "${TARGET_DIR}/${OUTPUT}${EXT}" "${TARGETS[@]}" \
+        --group="$TARGET_USER" \
+        --owner="$TARGET_USER" 2> /dev/null \
         || die 1 "[ERROR] Compression failed"
 
 fi
 
-sudo chown "${TARGET_USER}:${TARGET_USER}" "$TARGET" || die 4 "[ERROR] Permission setting failed"
-[[ $VERBOSE -eq 1 ]] && du -h "$TARGET"
+sudo chown "${TARGET_USER}:${TARGET_USER}" "${TARGET_DIR}/${OUTPUT}${EXT}" \
+    || die 4 "[ERROR] Permission setting failed"
+
+[[ $VERBOSE -eq 1 ]] && du -h "${TARGET_DIR}/${OUTPUT}${EXT}"
 
 die 0
 # vim:ft=bash:ts=4:sts=4:sw=4:et:

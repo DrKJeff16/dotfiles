@@ -23,19 +23,15 @@ error() {
 
 _cmd() {
     [[ $# -eq 0 ]] && return 127
-
     while [[ $# -gt 0 ]]; do
         ! command -v "$1" &> /dev/null && return 1
-
         shift
     done
-
     return 0
 }
 
 die() {
     local EC=0
-
     if [[ $# -ge 1 ]] && [[ $1 =~ ^(0|-?[1-9][0-9]*)$ ]]; then
         EC="$1"
         shift
@@ -61,7 +57,6 @@ usage() {
         "WIP, sorry"
         ""
     )
-
     die "$EC" "${TXT[@]}"
 }
 
@@ -72,7 +67,6 @@ __select_pkg_manager() {
             return 0
         fi
     done
-
     return 1
 }
 
@@ -80,7 +74,6 @@ __generate_cmds() {
     [[ $# -eq 0 ]] && return 127
 
     local CMD="$1"
-
     case "$CMD" in
         pacman)
             MGR_CMD=(
@@ -107,6 +100,19 @@ __generate_cmds() {
     return 0
 }
 
+__main() {
+    if [[ $VERBOSE -eq 0 ]]; then
+        for COMM in "${MGR_CMD[@]}"; do
+            eval "$COMM" || return 1
+        done
+    else
+        for COMM in "${MGR_CMD_VERB[@]}"; do
+            eval "$COMM" || return 1
+        done
+    fi
+    return 0
+}
+
 while getopts "$OPTIONS" OPTION; do
     case "$OPTION" in
         h) usage 0 ;;
@@ -115,17 +121,8 @@ while getopts "$OPTIONS" OPTION; do
     esac
 done
 
-__select_pkg_manager || exit 127
-__generate_cmds "$PKG_MANAGER" || exit 1
-
-if [[ $VERBOSE -eq 0 ]]; then
-    for COMM in "${MGR_CMD[@]}"; do
-        eval "$COMM" || die 1
-    done
-else
-    for COMM in "${MGR_CMD_VERB[@]}"; do
-        eval "$COMM" || die 1
-    done
-fi
+__select_pkg_manager || die 127
+__generate_cmds "$PKG_MANAGER" || die 1
+__main || die 1
 
 die 0

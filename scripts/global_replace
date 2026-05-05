@@ -1,85 +1,243 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python3
+# -*- coding: utf8 -*-
+"""Find and replace file contents recursively."""
+import re
+import shutil
+import sys
+from argparse import ArgumentParser, Namespace
+from io import TextIOWrapper
+from os import walk
+from os.path import isfile, realpath
+from sys import stderr, stdout
+from tempfile import mkstemp
+from typing import Any, Dict, List, Tuple, TypedDict
 
-#
-# TODO!: Implement option parsing
-#
 
-# Parts of code yanked from a custom build script I made
+class ArgData(TypedDict):
+    """Data to be passed to the argument parser."""
 
-# Print to `STDERR`, separate each arg with newline
-error() {
-    local TXT=("$@")
-    printf "%s\n" "${TXT[@]}" >&2
+    args: List[str]
+    kwargs: Dict[str, Any]
+
+
+def error(*msg, **kwargs) -> None:
+    """Print msg to stderr."""
+    if not msg:
+        return
+
+    end: str = kwargs.get("end", "\n")
+    sep: str = kwargs.get("sep", " ")
+    flush: bool = kwargs.get("flush", False)
+
+    print(*msg, end=end, sep=sep, flush=flush, file=stderr)
+
+
+def die(code: int = 0, *msg, **kwargs) -> None:
+    """
+    Kill the program with a given code, and print a message if given.
+
+    Parameters
+    ----------
+    code : int, optional, default=0
+        The exit code.
+    *msg
+        The data to print if given.
+    **kwargs
+        Any extra args to pass to ``print()``.
+    """
+    try:
+        code = int(code)
+    except Exception:
+        code = 1
+
+    end: str = kwargs.get("end", "\n")
+    sep: str = kwargs.get("sep", " ")
+    flush: bool = kwargs.get("flush", False)
+
+    if msg:
+        if code != 0:
+            error(*msg, end=end, sep=sep, flush=flush)
+        else:
+            print(*msg, end=end, sep=sep, flush=flush)
+
+    sys.exit(code)
+
+
+def find_files(fexts: List[str]) -> List[str]:
+    """Find all the matching file extensions."""
+    dir: str
+    dirnames: List[str]
+    filenames: List[str]
+    matches: List[str] = list()
+    for dir, dirnames, filenames in walk(".", followlinks=False):
+        for file in filenames:
+            if "." not in file:
+                continue
+
+            file_split = file.split(".")
+            for fext in fexts:
+                if file_split[-1] == fext:
+                    matches.append(f"{dir}/{file}".lstrip("./"))
+                    break
+
+    return matches
+
+
+def sed(
+    pattern: re.Pattern,
+    replace: str,
+    source: str,
+    verbose: bool,
+    dest: str | None = None,
+    count: int = 0
+) -> None:
+    """
+    Reads a source file and writes to the destination file.
+
+    In each line, replaces pattern with ``replace``.
+
+    Parameters
+    ----------
+    pattern : re.Pattern
+        Pattern to match to.
+    replace : str
+        Replacement string.
+    source : str
+        Input filename.
+    verbose : bool
+        Verbose mode boolean.
+    count : int, optional, default=0
+        Number of occurrences to replace.
+    dest : str, optional, default=None
+        Destination filename, if not given, source will be over written.
+    """
+
+    fin = open(source, 'r')
+    num_replaced = count
+    if dest:
+        fout = open(dest, 'w')
+    else:
+        _, name = mkstemp()
+        fout = open(name, 'w')
+
+    for line in fin:
+        out = re.sub(pattern, replace, line)
+        fout.write(out)
+
+        if out != line:
+            num_replaced += 1
+        if count and num_replaced > count:
+            break
+    try:
+        fout.writelines(fin.readlines())
+    except Exception as E:
+        raise E
+
+    fin.close()
+    fout.close()
+
+    if not dest:
+        shutil.move(name, source)
+
+
+def gen_args(data: List[ArgData]) -> Tuple[ArgumentParser, Namespace]:
+    """
+    Generate argparse arguments from special dict.
+
+    Parameters
+    ----------
+    args : List[List[str]]
+        A list of string lists.
+    opts : List[Dict[str, Any]]
+        A list of the argument options for the corresponding ``args`` element.
+
+    Returns
+    -------
+    parser : ArgumentParser
+        The ``argparse`` argument parser object.
+    ns : Namespa
+        The argparse ``Namespace`` object.
+    """
+    if not data:
+        raise AssertionError("(filter_histfile - gen_args): Bad arguments!")
+
+    parser = ArgumentParser(
+        prog="find_regexp",
+        description="List all files matching the given regex, per file extension"
+    )
+    for d in data:
+        parser.add_argument(*d["args"], **d["kwargs"])
+
+    return parser, parser.parse_args()
+
+
+def main() -> int:
+    """Execute main workflow."""
+    parser_data: List[ArgData] = [
+        ArgData(
+            args=["queries"],
+            kwargs={
+                "action": "extend",
+                "help": "The sed-like search-and-replace queries (must end with a `g`)",
+                "metavar": "SED_QUERIES",
+                "nargs": "+",
+            }
+        ),
+        ArgData(
+            args=["-v", "--verbose"],
+            kwargs={
+                "action": "store_true",
+                "dest": "verbose",
+                "help": "Enables verbose mode",
+                "required": False,
+            },
+        ),
+        ArgData(
+            args=["-e", "--extensions"],
+            kwargs={
+                "action": "extend",
+                "default": [],
+                "dest": "extensions",
+                "help": "The file extensions to search through",
+                "metavar": "FEXTS",
+                "nargs": "+",
+                "required": True,
+            },
+        ),
+    ]
+
+    parser, ns = gen_args(parser_data)
+
+    queries: str = ns.queries
+    extensions: List[str] = ns.extensions
+    verbose: bool = ns.verbose
+    if len(extensions) == 0:
+        die(127, "No extensions given!")
+
+    if len(queries) == 0:
+        die(1, "No queries given!")
+
+    sed_queries: List[Tuple[str, str, str, str]] = list()
+    for q in queries:
+        qry: Tuple[str, str, str, str] = tuple(q.split("/"))
+        if len(qry) != 4 or qry[3] != "g" or qry[0] != "s":
+            die(1, f"Bad query: {q}")
+
+        sed_queries.append(qry)
+
+    if len(sed_queries) == 0:
+        die(1, "No queries parsed!")
+
+    files = find_files(extensions)
+    if len(files) == 0:
+        die(1, "No extensions found!")
+
+    for query in sed_queries:
+        for file in files:
+            sed(re.compile(query[1]), query[2], file, verbose)
+
     return 0
-}
 
-# Check whether a console command (or multiple) exists
-# Returns 0 if all commands are found
-# Returns 1 if at least one command is not found
-# Returns 127 if no arguments were given
-_cmd() {
-    [[ $# -eq 0 ]] && return 127
 
-    while [[ $# -gt 0 ]]; do
-        if ! command -v "$1" &> /dev/null; then
-            return 1
-        fi
-
-        shift
-    done
-
-    return 0
-}
-
-# Terminate the script, optionally set the exit code and abort message
-die() {
-    local EC=1
-
-    if [[ $# -ge 1 ]] && [[ $1 =~ ^(0|-?[1-9][0-9]*)$ ]]; then
-        EC=$1
-        shift
-    fi
-
-    if [[ $# -ge 1 ]]; then
-        local TXT=("$@")
-        if [[ $EC -eq 0 ]]; then
-            printf "%s\n" "${TXT[@]}"
-        else
-            error "${TXT[@]}"
-        fi
-    fi
-
-    exit "$EC"
-}
-
-# TODO: Make help/usage function
-
-! _cmd 'find' && die 127 "\`find\` is not in PATH."
-[[ $# -eq 0 ]] && die 127 "No arguments were given. Aborting"
-
-EC=0
-
-while [[ $# -gt 0 ]]; do
-    if ! [[ "$1" =~ ^s/.+/.*/g?.*$ ]] ; then
-        error "Pattern \`$1\` not valid. Skipping..."
-        EC=1
-        shift
-        continue
-    fi
-
-    REGEX="$1"
-
-    printf "\n%s\n" "Applying regex ${REGEX}:"
-    for F in $(find . -type f -regex '.*\.\(c\|cc\|cpp\|h\|hh\|hpp\|sh\|bash\|i?py\|lua\)$' | cut -d '/' -f2-); do
-        echo -e "    ==> ${F}"
-        if ! sed -i "${REGEX}" "$F"; then
-            error "Unable to replace contents of file \`$F\`. Skipping file"
-            EC=1
-            continue
-        fi
-    done
-
-    shift
-done
-
-die "$EC"
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,22 +1,30 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Filter bash histfile."""
-
+import sys
 from argparse import ArgumentParser, Namespace
 from io import TextIOWrapper
 from os import environ
 from os.path import expanduser, expandvars, isfile, realpath
-from sys import stderr as STDERR
-from sys import stdout as STDOUT
-import sys
-from typing import Any, Dict, List, Tuple
+from sys import stderr, stdout
+from typing import Any, Dict, List, Tuple, TypedDict
 
-MAXSIZE = int(environ.get("HISTFILESIZE", "32500"))
-VERBOSE = False
+import argcomplete as ac
+
+MAXSIZE: int = int(environ.get("HISTFILESIZE", "32500"))
+VERBOSE: bool = False
+
+
+class ArgData(TypedDict):
+    """Data to be passed to the argument parser."""
+
+    args: List[str]
+    kwargs: Dict[str, Any]
+    completer: ac.FilesCompleter | None
 
 
 def error(*msg, **kwargs) -> None:
-    """Print msg to STDERR."""
+    """Print msg to stderr."""
     if not msg:
         return
 
@@ -24,7 +32,7 @@ def error(*msg, **kwargs) -> None:
     sep: str = kwargs.get("sep", " ")
     flush: bool = kwargs.get("flush", False)
 
-    print(*msg, end=end, sep=sep, flush=flush, file=STDERR)
+    print(*msg, end=end, sep=sep, flush=flush, file=stderr)
 
 
 def die(code: int = 0, *msg, **kwargs) -> None:
@@ -77,7 +85,7 @@ def verb_print(verbose: bool, *data: object, **kwargs) -> None:
     end: str = kwargs.get("end", "\n")
     sep: str = kwargs.get("sep", " ")
     flush: bool = kwargs.get("flush", False)
-    file = kwargs.get("file", STDOUT)
+    file = kwargs.get("file", stdout)
 
     print(*data, end=end, sep=sep, file=file, flush=flush)
 
@@ -180,7 +188,7 @@ def filter_data(verbose: bool, f: TextIOWrapper) -> str:
     return res
 
 
-def gen_args(args: List[List[str]], opts: List[Dict[str, Any]]) -> Tuple[ArgumentParser, Namespace]:
+def gen_args(data: List[ArgData]) -> Tuple[ArgumentParser, Namespace]:
     """
     Generate argparse arguments from special dict.
 
@@ -193,45 +201,55 @@ def gen_args(args: List[List[str]], opts: List[Dict[str, Any]]) -> Tuple[Argumen
 
     Returns
     -------
-    Namespace
+    parser : ArgumentParser
+        The ``argparse`` argument parser object.
+    ns : Namespa
         The argparse ``Namespace`` object.
     """
-    if not (args and opts):
+    if not data:
         raise AssertionError("(filter_histfile - gen_args): Bad arguments!")
 
     parser = ArgumentParser(
         prog="filter_histfile",
         description="Filter histfile and get rid of duplicates"
     )
-    for arg, dest in zip(args, opts):
-        parser.add_argument(*arg, **dest)
+    for d in data:
+        if d["completer"]:
+            parser.add_argument(*d["args"], **d["kwargs"]).completer = d["completer"]
+        else:
+            parser.add_argument(*d["args"], **d["kwargs"])
 
+    ac.autocomplete(parser)
     return parser, parser.parse_args()
 
 
 def main() -> int:
     """Execute main workflow"""
     code = 0
-    dests: List[List[str]] = [
-        ["-v", "--verbose"],
-        ["-f", "--file"],
-    ]
-    kwargs: List[Dict[str, Any]] = [
-        {
-            "action": "store_true",
-            "help": "Verbose mode",
-            "dest": "verbose",
-            "required": False,
-        },
-        {
-            "help": "Absolute path to histfile",
-            "dest": "fpath",
-            "default": "",
-            "nargs": 1,
-        },
+    parser_data: List[ArgData] = [
+        ArgData(
+            args=["-v", "--verbose"],
+            kwargs={
+                "action": "store_true",
+                "help": "Verbose mode",
+                "dest": "verbose",
+                "required": False,
+            },
+            completer=None
+        ),
+        ArgData(
+            args=["-f", "--file"],
+            kwargs={
+                "help": "Absolute path to histfile",
+                "dest": "fpath",
+                "default": "",
+                "nargs": 1,
+            },
+            completer=ac.FilesCompleter
+        ),
     ]
 
-    parser, args = gen_args(dests, kwargs)
+    parser, args = gen_args(parser_data)
     fpath: str = str(args.fpath) if args.fpath is not str else args.fpath
     verbose: bool = args.verbose
 
