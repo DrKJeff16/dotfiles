@@ -15,7 +15,6 @@ export HISTFILESIZE=32500
 shopt -s histappend
 shopt -s expand_aliases
 
-
 [[ -d "$HOME/.build" ]] && export BUILDD="$HOME/.build"
 [[ -d "$HOME/.org" ]] && export ORGD="$HOME/.org"
 [[ -d "$HOME/.config" ]] && export CONFD="$HOME/.config"
@@ -84,6 +83,8 @@ VISUAL='nano'
 [[ -d "$HOME/.nano" ]] && export DOT_NANO="$HOME/.nano"
 ! [[ -d "$HOME/.cache/nano" ]] && mkdir -p "$HOME/.cache/nano"
 
+[[ -f "$HOME/.tmux.conf" ]] && export TMUX_CFG="$HOME/.tmux.conf"
+
 if _cmd 'emacs'; then
     [[ -d "$HOME/.emacs.d" ]] && export SPC_D="$HOME/.emacs.d"
     [[ -f "$HOME/.spacemacs" ]] && export DOT_SPC="$HOME/.spacemacs"
@@ -131,6 +132,7 @@ fi
 
 SRCF=(
     "/usr/share/bash-complete-alias/complete_alias"
+    "/usr/share/git/completion/git-completion.bash"
     "/usr/share/bash-completion/bash_completion"
     "/usr/share/doc/pkgfile/command-not-found.bash"
 )
@@ -178,6 +180,12 @@ GPG_TTY="$(tty)"
 export GPG_TTY
 
 gpg-connect-agent updatestartuptty /bye &> /dev/null
+
+# If on TTY1, start Hyprland
+if [[ "$(tty)" == "/dev/tty1" ]] && _cmd 'start-hyprland'; then
+    yn "Start Hyprland?" && exec start-hyprland &> /dev/null
+    # set +x
+fi
 
 # set +x
 # vim:ft=bash:ts=4:sts=4:sw=4:et:

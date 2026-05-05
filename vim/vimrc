@@ -83,7 +83,7 @@ endif
 Plug 'itchyny/lightline.vim', { 'as': 'LightLine' }
 Plug 'preservim/nerdtree', { 'as': 'NERDTree' } | Plug 'ryanoasis/vim-devicons', { 'as': 'DevIcons' }
 
-Plug 'mattn/emmet-vim', { 'as': 'Emmet' }
+" Plug 'mattn/emmet-vim', { 'as': 'Emmet' }
 
 Plug 'pineapplegiant/spaceduck'
 Plug 'dracula/vim', { 'as': 'dracula' }

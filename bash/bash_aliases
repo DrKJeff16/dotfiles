@@ -129,24 +129,28 @@ if [[ "$(whoami)" != "root" ]] && [[ $UID -ne 0 ]]; then
         'nvim' snvim 'sudo \nvim' \
         'vim' svim 'sudo \vim'
 
-elif _cmd 'systemctl'; then
-    __alias_complete_alias \
-        srv 'systemctl' \
-        srv_Halt 'systemctl stop --now' \
-        srv_Off 'systemctl disable --now' \
-        srv_On 'systemctl enable --now' \
-        srv_Reload 'systemctl reload --now' \
-        srv_Restart 'systemctl restart --now' \
-        srv_Run 'systemctl start --now' \
-        srv_dreload 'systemctl daemon-reload' \
-        srv_halt 'systemctl stop' \
-        srv_help 'systemctl help' \
-        srv_off 'systemctl disable' \
-        srv_on 'systemctl enable' \
-        srv_restart 'systemctl restart' \
-        srv_run 'systemctl start' \
-        srv_status 'systemctl status'
+    else
+        if _cmd 'systemctl'; then
+            __alias_complete_alias \
+                srv 'systemctl' \
+                srv_Halt 'systemctl stop --now' \
+                srv_Off 'systemctl disable --now' \
+                srv_On 'systemctl enable --now' \
+                srv_Reload 'systemctl reload --now' \
+                srv_Restart 'systemctl restart --now' \
+                srv_Run 'systemctl start --now' \
+                srv_dreload 'systemctl daemon-reload' \
+                srv_halt 'systemctl stop' \
+                srv_help 'systemctl help' \
+                srv_off 'systemctl disable' \
+                srv_on 'systemctl enable' \
+                srv_restart 'systemctl restart' \
+                srv_run 'systemctl start' \
+                srv_status 'systemctl status'
 
+        fi
+
+        __cmd_alias_complete_alias 'pkgfile' upd_pkgfile 'pkgfile -u'
 fi
 
 __cmd_alias \
@@ -269,7 +273,7 @@ if ! [[ -z ${DOC_D+X} ]] && ! _cmd 'godocs'; then
     __alias_no_complete godocs 'pd "$DOC_D"'
 fi
 
-if [[ -d "$HOME/Pictures" ]]; then
+if [[ -d "$HOME/Pictures" ]] && ! _cmd 'gopic'; then
     __alias_no_complete gopic 'pd "$HOME/Pictures"'
 fi
 

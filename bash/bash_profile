@@ -7,6 +7,3 @@
 if [[ -f "$HOME/.bashrc" ]]; then
     . "$HOME/.bashrc" || printf "BAD SOURCING!\n" > /dev/null
 fi
-
-# Added by `rbenv init` on Fri 27 Feb 2026 18:28:16 CST
-eval "$(rbenv init - --no-rehash bash)"

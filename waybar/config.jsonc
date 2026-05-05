@@ -2,31 +2,33 @@
 {
     "layer": "top", // Waybar at top layer
     "position": "top", // Waybar position (top|bottom|left|right)
-    "height": 36, // Waybar height (to be removed for auto height)
+    // "height": 36, // Waybar height (to be removed for auto height)
     // "width": 1280, // Waybar width
-    "spacing": 0, // Gaps between modules (default: 4px)
+    "spacing": 2, // Gaps between modules (default: 4px)
     // Choose the order of the modules
     "modules-left": [
         "hyprland/workspaces"
     ],
-    "modules-center": ["hyprland/window"],
+    "modules-center": [
+        "hyprland/window"
+    ],
     "modules-right": [
         "privacy",
-        "idle_inhibitor",
+        "clock",
+        "mpris",
+        // "idle_inhibitor",
         "network",
-        "power-profiles-daemon",
-        "cpu",
-        "memory",
-        "temperature",
+        // "power-profiles-daemon",
+        // "cpu",
+        // "memory",
+        // "temperature",
         "backlight",
         "keyboard-state",
         "battery",
-        "battery#bat2",
-        "clock",
+        // "battery#bat2",
         "tray",
         "custom/power"
     ],
-
     "hyprland/workspaces": {
         "format": "{name}: {icon}",
         "format-icons": {
@@ -46,7 +48,6 @@
             "foot": "", // Windows that contain "foot" in either class or title. For optimization reasons, it will only match against a title if at least one other window explicitly matches against a title.
             "code": "󰨞"
         },
-
         "persistent-workspaces": {
             "*": 5
         },
@@ -63,6 +64,20 @@
         },
         "max-length": 200,
         "separate-outputs": true
+    },
+    "mpris": {
+        "format": "{player_icon}",
+        "format-paused": "{status_icon}",
+        "player-icons": {
+            "default": "\uf28b",
+            "mpv": "🎵"
+        },
+        "status-icons": {
+            "paused": "\uf144"
+        },
+        "on-click": "hyprmixer",
+        "max-length": 1000,
+        "interval": 1
     },
     "privacy": {
         "icon-spacing": 4,

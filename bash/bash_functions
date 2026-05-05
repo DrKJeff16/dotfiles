@@ -46,8 +46,10 @@ _strip_from_arr() {
     [[ $# -le 2 ]] && error "No arguments passed" && return 127
 
     local STRIP TARGET
-    STRIP="$1"; shift
-    TARGET="$1"; shift
+    STRIP="$1"
+                shift
+    TARGET="$1"
+                 shift
     if [[ $TARGET =~ ^\$[a-zA-Z_][a-zA-Z0-9_]+$ ]]; then
         error "(_strip_from_arr): Second argument (TARGET) can't have a \`\$\` at the start" "Aborting"
         return 5
@@ -331,8 +333,7 @@ xedit() {
         return 127
     fi
 
-    local TARGET
-    TARGET="$1"
+    local TARGET="$1"
     if ! which "$TARGET" &> /dev/null; then
         error "\`$TARGET\` not in \`\$PATH\`"
         return 127
@@ -349,15 +350,13 @@ xedit() {
         return 1
     fi
 
-    local EC=0
     if [[ "$EDITOR" == "nvim" ]] || [[ "$EDITOR" == "vim" ]]; then
         "$EDITOR" "$FPATH" +"cd \"$(dirname "$FPATH")\""
-        EC=$?
-    else
-        "$EDITOR" "$FPATH"
-        EC=$?
+        return $?
     fi
-    return "$EC"
+
+    "$EDITOR" "$FPATH"
+    return $?
 }
 export -f xedit
 complete -c xedit
@@ -393,13 +392,11 @@ edenv() {
         return 127
     fi
 
-    local TARGET FPATH
+    local TARGET="$1"
+    local FPATH
     local EC=1
-
-    TARGET="$1"
     for F in "$ENVD"/*.bash; do
         FPATH="$(basename "$F" | rev | cut -d '.' -f2- | rev)"
-
         if [[ "$FPATH" == "$TARGET" ]] || [[ "${FPATH}.bash" == "$TARGET" ]]; then
             "$EDITOR" +"cd \"$ENVD\"" "$F" && EC=0
         fi
@@ -439,12 +436,10 @@ gobld() {
             fi
         done
 
-        if [[ $FOR_SUCCESS -eq 0 ]]; then # Failsafe
-            return 1
-        fi
+        [[ $FOR_SUCCESS -eq 0 ]] && return 1 # Failsafe
     done
-    pd "$TARGET" && return 0
-    return 1
+    pd "$TARGET" || return 1
+    return 0
 }
 export -f gobld
 
@@ -452,13 +447,14 @@ goproj() {
     local TARGET="$HOME/Projects"
     ! [[ -d "$TARGET" ]] && return 127
     if [[ $# -eq 0 ]]; then
-        pd "$TARGET"
+        pd "$TARGET" || return 1
         return 0
     fi
 
-    local DIR FOR_SUCCESS
     while [[ $# -gt 0 ]] && [[ -d "$TARGET" ]]; do
+        local FOR_SUCCESS=0
         for D in $(find "$TARGET" -maxdepth 1 -type d | tail -n +2); do
+            local DIR
             DIR="$(basename "$D")"
             if [[ "$1" == "$DIR" ]]; then
                 FOR_SUCCESS=1
@@ -468,12 +464,10 @@ goproj() {
             fi
         done
 
-        if [[ $FOR_SUCCESS -eq 0 ]]; then # Failsafe
-            return 1
-        fi
+        [[ $FOR_SUCCESS -eq 0 ]] && return 1
     done
-    pd "$TARGET" && return 0
-    return 1
+    pd "$TARGET" || return 1
+    return 0
 }
 export -f goproj
 
@@ -489,9 +483,25 @@ gocfg() {
             pd "${TARGET}/${DIR}" && return 0
         fi
     done
-    return 1
+    return 0
 }
 export -f gocfg
+
+gopic() {
+    local TARGET="$HOME/Pictures"
+    ! [[ -d "$TARGET" ]] && return 127
+    [[ $# -eq 0 ]] && pd "$TARGET" && return 0
+
+    local DIR
+    for D in $(find "$TARGET" -maxdepth 1 -type d | tail -n +2); do
+        DIR="$(basename "$D")"
+        if [[ "$1" == "$DIR" ]]; then
+            pd "${TARGET}/${DIR}" && return 0
+        fi
+    done
+    return 0
+}
+export -f gopic
 
 godocs() {
     local TARGET="$HOME/Documents"
@@ -509,7 +519,10 @@ godocs() {
 }
 export -f godocs
 
-__get_last_cmd() { printf "%s" "$?"; return 0; }
+__get_last_cmd() {
+                   printf "%s" "$?"
+                                     return 0
+}
 export -f __get_last_cmd
 complete -W "" __get_last_cmd
 
@@ -665,8 +678,14 @@ select_cc() {
     if [[ $# -gt 0 ]] && [[ $HELP -ne 1 ]]; then
         while getopts ":h" OPTION; do
             case "$OPTION" in
-                h) HELP=1 ; EC=0 ;;
-                *) HELP=1 ; EC=1 ;;
+                h)
+                    HELP=1
+                            EC=0
+                                 ;;
+                *)
+                    HELP=1
+                            EC=1
+                                 ;;
             esac
         done
     fi
@@ -736,7 +755,10 @@ comp_commands() {
         case "$ARG" in
             h) return 0 ;;
             v) VERBOSE=1 ;;
-            *) error "(comp_commands): Invalid args!"; return 1 ;;
+            *)
+                error "(comp_commands): Invalid args!"
+                                                       return 1
+                                                                ;;
         esac
 
         shift
@@ -766,7 +788,7 @@ cl() {
     local dir="$1"
     local dir="${dir:=$HOME}"
     if [[ -d "$dir" ]]; then
-        cd "$dir" >/dev/null || return 1
+        cd "$dir" > /dev/null || return 1
         ls -A --color=auto
     else
         echo "bash: cl: $dir: Directory not found"
@@ -836,5 +858,7 @@ mkd() {
 }
 export -f mkd
 complete -A directory mkd
+
+_cmd 'filter_histfile' && eval "$(register-python-argcomplete filter_histfile)"
 
 # vim: set ft=bash ts=4 sts=4 sw=4 et ai si sta:

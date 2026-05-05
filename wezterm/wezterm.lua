@@ -128,11 +128,14 @@ wezterm.on("window-config-reloaded", function(window)
   wezterm.log_info(("the config was reloaded for window %s"):format(window:window_id()))
 end)
 
+config.window_frame = {
+  font = wezterm.font({
+    family = "FiraCode Nerd Font Mono",
+    weight = "Bold",
+  }),
+}
 config.launch_menu = { { args = { "top" } }, { label = "Bash", args = { "bash", "-l" } } }
 config.window_background_opacity = 1.0
-config.kde_window_background_blur = true
-config.front_end = "WebGpu"
-config.webgpu_power_preference = "HighPerformance"
 config.webgpu_force_fallback_adapter = false
 config.mouse_bindings = {
   { -- Scrolling up while holding CTRL increases the font size
@@ -159,8 +162,6 @@ config.mouse_bindings = {
 
 config.hide_mouse_cursor_when_typing = false
 config.mouse_wheel_scrolls_tabs = false
-config.launcher_alphabet = "1234567890abcdefghilmnopqrstuvwxyz"
-config.quick_select_alphabet = "aoeuqjkxpyhtnsgcrlmwvzfidb"
 config.font_size = 18
 config.font = wezterm.font({
   family = "FiraCode Nerd Font Mono",
@@ -226,29 +227,23 @@ config.font = wezterm.font({
 
 config.font_colr_rasterizer = "Harfbuzz"
 config.use_dead_keys = false
-config.use_fancy_tab_bar = true
-config.webgpu_force_fallback_adapter = false
 config.warn_about_missing_glyphs = false
 config.audible_bell = "Disabled"
 config.scrollback_lines = 72500
 config.cursor_blink_rate = 500
-config.cursor_blink_ease_in = "Linear"
-config.cursor_blink_ease_out = "Linear"
+config.cursor_blink_ease_in = "EaseIn"
+config.cursor_blink_ease_out = "EaseOut"
 config.default_cursor_style = "BlinkingBlock"
-config.color_scheme = "Tokyo Night Storm (Gogh)"
 config.enable_scroll_bar = false
-config.enable_wayland = true
-config.hide_tab_bar_if_only_one_tab = false
-config.enable_title_reporting = true
+config.hide_tab_bar_if_only_one_tab = true
 config.adjust_window_size_when_changing_font_size = true
 config.automatically_reload_config = true
 config.anti_alias_custom_block_glyphs = true
 config.bold_brightens_ansi_colors = "BrightAndBold"
+config.color_scheme = "Tokyo Night Storm (Gogh)"
 config.detect_password_input = true
 config.exit_behavior = "Close"
 config.check_for_updates = true
-config.animation_fps = 144
-config.max_fps = 144
 
 config.hyperlink_rules = wezterm.default_hyperlink_rules()
 
@@ -266,30 +261,6 @@ table.insert(config.hyperlink_rules, {
 table.insert(config.hyperlink_rules, {
   regex = [[["]?([\w\d]{1}[-\w\d]+)(/){1}([-\w\d\.]+)["]?]],
   format = "https://www.github.com/$1/$3",
-})
-
----@type BarWezterm
-local bar = wezterm.plugin.require("https://github.com/adriankarlen/bar.wezterm")
-bar.apply_to_config(config, {
-  position = "top",
-  max_width = 100,
-  padding = { left = 0, right = 0, tabs = { left = 0, right = 1 } },
-  separator = {
-    space = 2,
-    left_icon = nf.fa_long_arrow_right,
-    right_icon = nf.fa_long_arrow_left,
-    field_icon = nf.indent_line,
-  },
-  modules = {
-    clock = { enabled = true, icon = nf.md_calendar_clock, format = "%H:%M:%S", color = 3 },
-    workspace = { enabled = true, icon = nf.cod_window, color = 2 },
-    leader = { enabled = true, icon = nf.oct_rocket, color = 5 },
-    cwd = { enabled = false },
-    zoom = { enabled = false },
-    pane = { enabled = true, icon = nf.cod_multiple_windows, color = 6 },
-    username = { enabled = true, icon = nf.fa_user, color = 7 },
-    hostname = { enabled = false },
-  },
 })
 
 return config
