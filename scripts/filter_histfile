@@ -15,12 +15,22 @@ MAXSIZE: int = int(environ.get("HISTFILESIZE", "32500"))
 VERBOSE: bool = False
 
 
-class ArgData(TypedDict):
+class ArgData:
     """Data to be passed to the argument parser."""
 
     args: List[str]
     kwargs: Dict[str, Any]
     completer: ac.FilesCompleter | None
+
+    def __init__(
+        self,
+        args: List[str],
+        kwargs: Dict[str, Any],
+        completer: ac.FilesCompleter | None
+    ):
+        self.args = args
+        self.kwargs = kwargs
+        self.completer = completer
 
 
 def error(*msg, **kwargs) -> None:
@@ -214,10 +224,10 @@ def gen_args(data: List[ArgData]) -> Tuple[ArgumentParser, Namespace]:
         description="Filter histfile and get rid of duplicates"
     )
     for d in data:
-        if d["completer"]:
-            parser.add_argument(*d["args"], **d["kwargs"]).completer = d["completer"]
+        if d.completer:
+            parser.add_argument(*d.args, **d.kwargs).completer = d.completer
         else:
-            parser.add_argument(*d["args"], **d["kwargs"])
+            parser.add_argument(*d.args, **d.kwargs)
 
     ac.autocomplete(parser)
     return parser, parser.parse_args()

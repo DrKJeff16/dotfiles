@@ -13,12 +13,22 @@ from typing import Any, Dict, List, Tuple, TypedDict
 import argcomplete as ac
 
 
-class ArgData(TypedDict):
+class ArgData:
     """Data to be passed to the argument parser."""
 
     args: List[str]
     kwargs: Dict[str, Any]
     completer: ac.DirectoriesCompleter | None
+
+    def __init__(
+        self,
+        args: List[str],
+        kwargs: Dict[str, Any],
+        completer: ac.DirectoriesCompleter | None
+    ):
+        self.args = args
+        self.kwargs = kwargs
+        self.completer = completer
 
 
 def error(*msg, **kwargs) -> None:
@@ -119,11 +129,11 @@ def gen_args(data: List[ArgData]) -> Tuple[ArgumentParser, Namespace]:
         description="List all files matching the given regex, per file extension"
     )
     for d in data:
-        if d["completer"]:
-            parser.add_argument(*d["args"], **d["kwargs"]
-                                ).completer = d["completer"]
+        if d.completer:
+            parser.add_argument(*d.args, **d.kwargs
+                                ).completer = d.completer
         else:
-            parser.add_argument(*d["args"], **d["kwargs"])
+            parser.add_argument(*d.args, **d.kwargs)
 
     return parser, parser.parse_args()
 
@@ -195,12 +205,14 @@ def main() -> int:
         die(1, "No query given!")
 
     comp_query: re.Pattern[str] = re.compile(query)
+    found: bool = False
     for file in files:
         matched, n_matches = search_file(file, comp_query)
         if matched:
+            found = True
             print(file if not count else f"{file}   ==>   {n_matches}")
 
-    return 0
+    return 0 if found else 1
 
 
 if __name__ == "__main__":

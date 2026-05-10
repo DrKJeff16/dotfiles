@@ -25,6 +25,7 @@ GIT_OVERRIDES=(
 
 TARGETS=(
     "$HOME/.Xresources"
+    "$HOME/.alsoftrc"
     "$HOME/.bash_aliases"
     "$HOME/.bash_completion"
     "$HOME/.bash_functions"
