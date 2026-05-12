@@ -7,7 +7,7 @@ from io import TextIOWrapper
 from os import environ
 from os.path import expanduser, expandvars, isfile, realpath
 from sys import stderr, stdout
-from typing import Any, Dict, List, Tuple, TypedDict
+from typing import Any, Dict, List, TextIO, Tuple
 
 import argcomplete as ac
 
@@ -16,7 +16,27 @@ VERBOSE: bool = False
 
 
 class ArgData:
-    """Data to be passed to the argument parser."""
+    """
+    Data to be passed to the argument parser.
+
+    Parameters
+    ----------
+    args : List[str]
+        List of options related to this argument (e.g. ``-v``).
+    kwargs : Dict[str, Any]
+        Dictionary of arguments passed to an argument parser option.
+    completer : argcomplete.FilesCompleter, optional, default=None
+        Optional completer.
+
+    Attributes
+    ----------
+    args : List[str]
+        List of options related to this argument (e.g. ``-v``).
+    kwargs : Dict[str, Any]
+        Dictionary of arguments passed to an argument parser option.
+    completer : argcomplete.FilesCompleter, optional, default=None
+        Optional completer.
+    """
 
     args: List[str]
     kwargs: Dict[str, Any]
@@ -34,13 +54,30 @@ class ArgData:
 
 
 def error(*msg, **kwargs) -> None:
-    """Print msg to stderr."""
+    """
+    Print msg to stderr.
+
+    Parameters
+    ----------
+    *msg
+        The data to print if given.
+    **kwargs
+        Any extra args to pass to ``print()`` (except for ``file``).
+    """
     if not msg:
         return
 
     end: str = kwargs.get("end", "\n")
+    if end is not str:
+        end = "\n"
+
     sep: str = kwargs.get("sep", " ")
+    if sep is not str:
+        sep = " "
+
     flush: bool = kwargs.get("flush", False)
+    if flush is not bool:
+        flush = False
 
     print(*msg, end=end, sep=sep, flush=flush, file=stderr)
 
@@ -64,8 +101,16 @@ def die(code: int = 0, *msg, **kwargs) -> None:
         code = 1
 
     end: str = kwargs.get("end", "\n")
+    if end is not str:
+        end = "\n"
+
     sep: str = kwargs.get("sep", " ")
+    if sep is not str:
+        sep = " "
+
     flush: bool = kwargs.get("flush", False)
+    if flush is not bool:
+        flush = False
 
     if msg:
         if code != 0:
@@ -93,9 +138,20 @@ def verb_print(verbose: bool, *data: object, **kwargs) -> None:
         return
 
     end: str = kwargs.get("end", "\n")
+    if end is not str:
+        end = "\n"
+
     sep: str = kwargs.get("sep", " ")
+    if sep is not str:
+        sep = " "
+
     flush: bool = kwargs.get("flush", False)
+    if flush is not bool:
+        flush = False
+
     file = kwargs.get("file", stdout)
+    if not (isinstance(file, TextIO) or isinstance(file, TextIOWrapper)):
+        file = stdout
 
     print(*data, end=end, sep=sep, file=file, flush=flush)
 
@@ -116,12 +172,13 @@ def get_histfile_path(p: str = "") -> str:
     p = p.strip(" ").strip("\n") if p is str else ""
 
     if p != "":
-        p = realpath(expanduser(p) if (p[0] == "~" or "$" in p) else p)
+        p = expanduser(p) if (p[0] == "~" or "$" in p) else p
     elif "HISTFILE" in environ.keys():
-        p = realpath(environ["HISTFILE"])
+        p = environ["HISTFILE"]
     else:
-        p = realpath(expandvars("$HOME") + "/.bash_history")
+        p = expandvars("$HOME") + "/.bash_history"
 
+    p = realpath(p)
     if isfile(p):
         return p
 
@@ -142,8 +199,7 @@ def line_strip(data: str) -> str:
     str
         Stripped line data.
     """
-    data = str(data) if data is not str else data
-    return data.rstrip("\n").strip(" ").rstrip("/")
+    return (str(data) if data is not str else data).rstrip("\n").strip(" ").rstrip("/")
 
 
 def filter_data(verbose: bool, f: TextIOWrapper) -> str:

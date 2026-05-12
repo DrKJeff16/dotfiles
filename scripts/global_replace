@@ -5,19 +5,21 @@ import re
 import shutil
 import sys
 from argparse import ArgumentParser, Namespace
-from io import TextIOWrapper
 from os import walk
-from os.path import isfile, realpath
-from sys import stderr, stdout
+from sys import stderr
 from tempfile import mkstemp
-from typing import Any, Dict, List, Tuple, TypedDict
+from typing import Any, Dict, List, Tuple
 
 
-class ArgData(TypedDict):
+class ArgData:
     """Data to be passed to the argument parser."""
 
     args: List[str]
     kwargs: Dict[str, Any]
+
+    def __init__(self, args: List[str], kwargs: Dict[str, Any]):
+        self.args = args
+        self.kwargs = kwargs
 
 
 def error(*msg, **kwargs) -> None:
@@ -166,7 +168,7 @@ def gen_args(data: List[ArgData]) -> Tuple[ArgumentParser, Namespace]:
         description="List all files matching the given regex, per file extension"
     )
     for d in data:
-        parser.add_argument(*d["args"], **d["kwargs"])
+        parser.add_argument(*d.args, **d.kwargs)
 
     return parser, parser.parse_args()
 
