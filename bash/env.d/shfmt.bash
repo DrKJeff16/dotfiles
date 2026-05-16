@@ -1,6 +1,6 @@
-[[ $- != *i* ]] && return
-
-! which 'shfmt' &> /dev/null && return
+if [[ $- != *i* ]] || ! which 'shfmt' &> /dev/null; then
+    return
+fi
 
 shfmt() {
     command shfmt -i 0 -ci -sr -kp "$@"

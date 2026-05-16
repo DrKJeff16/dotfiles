@@ -5,5 +5,9 @@
 
 [[ "$XDG_SESSION_TYPE" = "wayland" ]] && export MOZ_ENABLE_WAYLAND=1
 if [[ -f "$HOME/.bashrc" ]]; then
-    . "$HOME/.bashrc" || printf "BAD SOURCING!\n" > /dev/null
+    . "$HOME/.bashrc" || printf "BAD SOURCING!\n" 2>&1
+fi
+
+if _cmd 'rbenv'; then
+    eval "$(rbenv init - --no-rehash bash)"
 fi

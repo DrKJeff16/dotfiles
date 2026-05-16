@@ -1,5 +1,6 @@
-[[ "$UID" == 0 ]] && return
-! [[ -d "$HOME/.org" ]] && return
+if [[ "$UID" == 0 ]] || ! [[ -d "$HOME/.org" ]]; then
+    return
+fi
 
 export ORG_D="$HOME/.org"
 [[ -d "$ORG_D/agendas" ]] && export ORG_AGENDAS_D="$ORG_D/agendas"

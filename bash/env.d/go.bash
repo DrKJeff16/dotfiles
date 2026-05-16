@@ -1,4 +1,5 @@
-! _cmd 'go' && return
-! [[ -d "$HOME/go/bin" ]] && return
+if ! _cmd 'go' || ! [[ -d "$HOME/go/bin" ]]; then
+    return
+fi
 
 __append2path "$HOME/go/bin"

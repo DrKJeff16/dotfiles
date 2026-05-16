@@ -2,16 +2,17 @@
 # $ENV_D/cargo.bash
 #
 
-if _cmd 'cargo'; then
-    [[ -d "$HOME/.cargo/bin" ]] && __append2path "$HOME/.cargo/bin"
+# shellcheck disable=SC1090
 
-    # mkdir -p /tmp/cargo.d
-    #
-    # [[ -d /tmp/cargo.d ]] && export CARGO_TARGET_DIR="/tmp/cargo.d"
-    unset CARGO_TARGET_DIR
+! _cmd 'cargo' 'rustc' && return
+
+if _cmd 'cargo' && [[ -d "$HOME/.cargo/bin" ]]; then
+    __append2path "$HOME/.cargo/bin"
 fi
 
 if _cmd 'rustc'; then
-	[[ -f "$(rustc --print sysroot)/etc/bash_completion.d/cargo" ]] \
-	    && . "$(rustc --print sysroot)/etc/bash_completion.d/cargo"
+    COMP_PATH="$(rustc --print sysroot)/etc/bash_completion.d/cargo"
+    [[ -f "${COMP_PATH}" ]] && . "${COMP_PATH}"
+
+    unset COMP_PATH
 fi

@@ -1,6 +1,7 @@
-[[ $- != *i* ]] && return
-! _cmd 'foot' && return
+if [[ $- != *i* ]] || ! _cmd 'foot'; then
+    return
+fi
 
 export FOOT_CFG="$HOME/.config/foot"
 export FOOTRC="$FOOT_CFG/foot.ini"
-! [[ -d "$FOOT_CFG" ]] && mkdir -p "$FOOT_CFG"
+! [[ -d "$FOOT_CFG" ]] && command mkdir -p "$FOOT_CFG"

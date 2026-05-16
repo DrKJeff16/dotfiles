@@ -1,7 +1,6 @@
-[[ "$UID" == 0 ]] && return
-
-! [[ -d "$HOME/.config/chadwm" ]] && return
-! [[ -x "$HOME/.config/chadwm/scripts/run.sh" ]] && return
+if [[ "$UID" == 0 ]] || ! [[ -d "$HOME/.config/chadwm" ]] || ! [[ -x "$HOME/.config/chadwm/scripts/run.sh" ]]; then
+    return
+fi
 
 export CHADWM_CFG="$HOME/.config/chadwm"
 

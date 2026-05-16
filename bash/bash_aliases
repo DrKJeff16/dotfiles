@@ -129,7 +129,7 @@ if [[ "$(whoami)" != "root" ]] && [[ $UID -ne 0 ]]; then
         'nvim' snvim 'sudo \nvim' \
         'vim' svim 'sudo \vim'
 
-    else
+else
         if _cmd 'systemctl'; then
             __alias_complete_alias \
                 srv 'systemctl' \
@@ -148,7 +148,7 @@ if [[ "$(whoami)" != "root" ]] && [[ $UID -ne 0 ]]; then
                 srv_run 'systemctl start' \
                 srv_status 'systemctl status'
 
-        fi
+    fi
 
         __cmd_alias_complete_alias 'pkgfile' upd_pkgfile 'pkgfile -u'
 fi

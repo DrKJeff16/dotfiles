@@ -1,5 +1,6 @@
-[[ $- != *i* ]] && return
-! [[ -r /usr/share/git/git-prompt.sh ]] && return
+if [[ $- != *i* ]] || ! _cmd 'git' || ! [[ -r /usr/share/git/git-prompt.sh ]]; then
+    return
+fi
 
 . /usr/share/git/git-prompt.sh
 
