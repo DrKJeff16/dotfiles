@@ -861,4 +861,8 @@ complete -A directory mkd
 
 _cmd 'filter_histfile' && eval "$(register-python-argcomplete filter_histfile)"
 
+if ! [[ -d "$SPC_D" ]]; then
+    unset -f upd_spc
+fi
+
 # vim: set ft=bash ts=4 sts=4 sw=4 et ai si sta:

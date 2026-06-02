@@ -3,12 +3,11 @@ local wezterm = require("wezterm")
 local config = wezterm.config_builder()
 local mux = wezterm.mux
 local act = wezterm.action
-local nf = wezterm.nerdfonts
 
 ---@param str string
 ---@return string cr_string
 local function carriage_return(str)
-  return ("%s\r"):format(str)
+  return ("%s\r\n"):format(str)
 end
 
 ---@param fg_procc_name string
@@ -16,15 +15,12 @@ end
 local function is_shell(fg_procc_name)
   local shell_names = { "bash", "zsh", "fish", "sh", "ksh", "dash" }
   local process = fg_procc_name:match("[^/\\]+$") or fg_procc_name ---@type string
-  local res = false
   for _, shell in ipairs(shell_names) do
     if process == shell then
-      res = true
-      break
+      return true
     end
   end
-
-  return res
+  return false
 end
 
 ---@type weztermConfig
@@ -262,6 +258,128 @@ table.insert(config.hyperlink_rules, {
   regex = [[["]?([\w\d]{1}[-\w\d]+)(/){1}([-\w\d\.]+)["]?]],
   format = "https://www.github.com/$1/$3",
 })
+
+---@type Log.API
+local log = wezterm.plugin.require("https://github.com/sravioli/log.wz")
+log.setup()
+
+---@type Ribbon.Api
+local ribbon = wezterm.plugin.require("https://github.com/sravioli/ribbon.wz")
+
+ribbon.setup()
+
+---@type Chord
+local chord = wezterm.plugin.require("https://github.com/sravioli/chord.wz")
+
+chord.setup({
+  aliases = {
+    CR = "Enter",
+    ESC = "Escape",
+  },
+  leader = "<Space>",
+  modifiers = {
+    C = "CTRL",
+    S = "SHIFT",
+    A = "ALT",
+    M = "ALT",
+    W = "SUPER",
+  },
+  hints = {
+    separator = " / ",
+  },
+  command = {
+    key = "<leader><Space>",
+    title = "Commands",
+    include_defaults = false,
+  },
+})
+
+chord.maps(config, {
+  { "<C-S-c>", act.CopyTo("Clipboard"), "copy" },
+  { "<C-S-v>", act.PasteFrom("Clipboard"), "paste" },
+  { "<leader>p", act.ActivateCommandPalette, "command palette" },
+
+  -- Native WezTerm entries pass through.
+  {
+    key = "f",
+    mods = "CTRL|SHIFT",
+    action = act.Search("CurrentSelectionOrEmptyString"),
+    desc = "search",
+  },
+
+  -- Named fields are accepted too.
+  {
+    lhs = "<M-CR>",
+    action = act.ToggleFullScreen,
+    desc = "fullscreen",
+  },
+})
+
+chord.tables(config, {
+  resize_mode = {
+    meta = { i = "R", txt = "RESIZE", bg = "#7aa2f7" },
+    keys = {
+      { "h", act.AdjustPaneSize({ "Left", 5 }), "left" },
+      { "j", act.AdjustPaneSize({ "Down", 5 }), "down" },
+      { "k", act.AdjustPaneSize({ "Up", 5 }), "up" },
+      { "l", act.AdjustPaneSize({ "Right", 5 }), "right" },
+      { "<ESC>", "PopKeyTable", "exit" },
+    },
+  },
+})
+
+chord.tables(config, {
+  resize_mode = {
+    meta = { i = "R", txt = "RESIZE", bg = "#7aa2f7" },
+    keys = {
+      { "h", act.AdjustPaneSize({ "Left", 5 }), "left" },
+      { "j", act.AdjustPaneSize({ "Down", 5 }), "down" },
+      { "k", act.AdjustPaneSize({ "Up", 5 }), "up" },
+      { "l", act.AdjustPaneSize({ "Right", 5 }), "right" },
+      { "<ESC>", "PopKeyTable", "exit" },
+    },
+  },
+})
+
+local resize = chord.mode("resize_mode", {
+  one_shot = false,
+  meta = { i = "R", txt = "RESIZE", bg = "#7aa2f7" },
+  keys = {
+    { "h", act.AdjustPaneSize({ "Left", 5 }), "left" },
+    { "l", act.AdjustPaneSize({ "Right", 5 }), "right" },
+  },
+})
+
+chord.tables(config, { resize })
+table.insert(config.keys, resize:activate("<leader>r", "resize mode"))
+
+chord.command.register({
+  id = "ssh-prod",
+  label = "SSH: production",
+  action = act.SpawnCommandInNewTab({ args = { "ssh", "prod" } }),
+})
+
+chord.command.apply(config, {
+  include_undocumented = true,
+  include_defaults = true,
+  key = "<leader><Space>",
+  title = "Commands",
+  sources = { "key_table" },
+  tables = { "resize_mode", "window_mode" },
+})
+
+chord.overlay.apply(config, {
+  key = "<leader>?",
+  title = "Leader keys",
+  sources = { "keys", "key_table" },
+})
+
+wezterm.on("augment-command-palette", function()
+  return chord.command.palette(config, {
+    prefix = "Chord: ",
+    sources = { "keys", "key_table" },
+  })
+end)
 
 return config
 -- vim: set ts=2 sts=2 sw=2 et ai si sta:

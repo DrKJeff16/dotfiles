@@ -154,8 +154,6 @@ if [[ -f "$COMPFILE" ]] && [[ -r "$COMPFILE" ]]; then
     . "$COMPFILE"
 fi
 
-_cmd 'dbus-launch' && export $(dbus-launch)
-
 # =================================================================================================
 
 # From here on, load the rest if in an interactive shell
@@ -183,7 +181,7 @@ gpg-connect-agent updatestartuptty /bye &> /dev/null
 
 # If on TTY1, start Hyprland
 if [[ "$(tty)" == "/dev/tty1" ]] && _cmd 'start-hyprland'; then
-    yn "Start Hyprland?" && exec start-hyprland &> /dev/null
+    yn "Start Hyprland?" && exec start-hyprland &> /dev/null || true
     # set +x
 fi
 
