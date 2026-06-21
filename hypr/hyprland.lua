@@ -19,7 +19,6 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("/usr/bin/hypr_portal")
 	hl.exec_cmd("wl-paste --type text --watch cliphist store & wl-paste --type image --watch cliphist store")
 	hl.exec_cmd("waybar & hyprpaper & hyprsunset & hyprlauncher -d")
-	hl.exec_cmd("hypridle & hyprlock")
 	hl.exec_cmd(terminal)
 end)
 
