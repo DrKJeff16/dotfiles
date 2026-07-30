@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Convert JPG images to PNG."""
+import re
+import sys
+from argparse import ArgumentParser, Namespace
+from os import remove
+from os.path import basename, expanduser, isfile, realpath
+
+from PIL import Image, ImageFile
+
+
+def jpg_convert(path: str, output: str) -> None:
+    """Convert JPG data to a PNG file."""
+    parent: str = "/".join(output.split("/")[:-1])
+    base: str = basename(output.rstrip("."))
+    if not re.compile(".*\\.[Pp][Nn][Gg]$").match(base):
+        base += ".png"
+
+    img: ImageFile.ImageFile = Image.open(path)
+    img.save(f"{parent}/{base}")
+
+
+def main() -> int:
+    """Execute main workflow."""
+    parser: ArgumentParser = ArgumentParser(
+        "jpg2png",
+        description="Convert an JPG file to PNG format"
+    )
+    parser.add_argument("file", nargs=1, metavar="/path/to/input.jpg")
+    parser.add_argument(
+        "-k",
+        "--keep",
+        action="store_true",
+        dest="keep",
+        required=False
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        default="",
+        dest="output",
+        metavar="/path/to/output.png",
+        required=False
+    )
+    ns: Namespace = parser.parse_args()
+    output: str = realpath(expanduser(ns.output)) if ns.output != "" else ""
+    keep: bool = ns.keep
+
+    fpath: str = realpath(expanduser(ns.file[0]))
+    if not isfile(fpath):
+        print(f"Not a file `{fpath}`", file=sys.stderr)
+        return 1
+
+    if not re.compile(".*\\.[Jj][Pp][Ee]?[Gg]$").match(fpath):
+        print(f"Not matching: `{fpath}`", file=sys.stderr)
+        return 1
+
+    parent: str = "/".join(fpath.split("/")[:-1])
+    base: str = ".".join(basename(fpath).split(".")[:-1])
+    output = f"{parent}/{base}.jpg" if output == "" else output
+
+    jpg_convert(fpath, output)
+
+    if not keep:
+        remove(fpath)
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

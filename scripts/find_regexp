@@ -1,20 +1,45 @@
 #!/usr/bin/env python3
 # -*- coding: utf8 -*-
 """List all files matching the given regex, per file extension."""
+import io
 import re
 import sys
 from argparse import ArgumentParser, Namespace
-from io import TextIOWrapper
 from os import walk
 from os.path import expanduser, isfile, realpath
 from sys import stderr, stdout
-from typing import Any, Dict, List, Tuple, TypedDict
+from typing import Any, Dict, List, TextIO, Tuple, TypedDict
 
 import argcomplete as ac
+import unidecode
+
+VERBOSE: bool = False
 
 
 class ArgData:
-    """Data to be passed to the argument parser."""
+    """
+    Data to be passed to the argument parser.
+
+    Attributes
+    ----------
+    args : List[str]
+        List of strings representing the options to create.
+    kwargs : Dict[str, Any]
+        A key-value representation of every parameter to be passed
+        to ``ArgumentParser.add_argument()``.
+    completer : argcomplete.DirectoriesCompleter or None
+        The completer object.
+
+    Parameters
+    ----------
+    args : List[str]
+        List of strings representing the options to create.
+    kwargs : Dict[str, Any]
+        A key-value representation of every parameter to be passed
+        to ``ArgumentParser.add_argument()``.
+    completer : argcomplete.DirectoriesCompleter or None
+        The completer object.
+    """
 
     args: List[str]
     kwargs: Dict[str, Any]
@@ -29,6 +54,19 @@ class ArgData:
         self.args = args
         self.kwargs = kwargs
         self.completer = completer
+
+
+def verb_print(*msg, **kwargs) -> None:
+    """Print data ONLY if ``verbose`` is ``True``."""
+    if not (msg and VERBOSE):
+        return
+
+    end: str = kwargs.get("end", "\n")
+    sep: str = kwargs.get("sep", " ")
+    flush: bool = kwargs.get("flush", False)
+    file: TextIO = kwargs.get("file", stdout)
+
+    print(*msg, end=end, sep=sep, flush=flush, file=file)
 
 
 def error(*msg, **kwargs) -> None:
@@ -76,11 +114,17 @@ def die(code: int = 0, *msg, **kwargs) -> None:
 
 def search_file(path: str, query: re.Pattern[str]) -> Tuple[bool, int]:
     """Search query inside the given file."""
-    file = open(path, "r")
-    data: str = file.read()
-    file.close()
+    file: io.TextIOWrapper = io.open(path, encoding="utf-8", mode="r")
+    data: str = ""
+    try:
+        data = file.read()
+    except Exception:
+        verb_print(f"Skipping `{path}`", file=stderr)
+    finally:
+        file.close()
 
-    return query.search(data) is not None, len(query.findall(data))
+    found: bool = data != "" and query.search(data) is not None
+    return found, (len(query.findall(data)) if data != "" else 0)
 
 
 def find_files(fexts: List[str], dir: str = ".") -> List[str]:
@@ -140,6 +184,7 @@ def gen_args(data: List[ArgData]) -> Tuple[ArgumentParser, Namespace]:
 
 def main() -> int:
     """Execute main workflow."""
+    global VERBOSE
     parser_data: List[ArgData] = [
         ArgData(
             args=["directory"],
@@ -155,9 +200,19 @@ def main() -> int:
             args=["-c", "--count"],
             kwargs={
                 "action": "store_true",
-                "required": False,
                 "dest": "count",
                 "help": "Whether to print how many matches were found for each file",
+                "required": False,
+            },
+            completer=None
+        ),
+        ArgData(
+            args=["-v", "--verbose"],
+            kwargs={
+                "action": "store_true",
+                "dest": "verbose",
+                "help": "Enables verbose mode",
+                "required": False,
             },
             completer=None
         ),
@@ -180,8 +235,8 @@ def main() -> int:
                 "help": "The regex query to search for",
                 "metavar": "QUERY",
                 "nargs": 1,
-                "type": str,
                 "required": True,
+                "type": str,
             },
             completer=None
         ),
@@ -190,6 +245,7 @@ def main() -> int:
     parser, ns = gen_args(parser_data)
 
     query: str = ns.query[0]
+    VERBOSE = ns.verbose
     directory: str = realpath(expanduser(
         ns.directory)) if ns.directory is not None else "."
     extensions: List[str] = ns.extensions

@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Convert SVG files to PNG."""
+import re
+import sys
+from argparse import ArgumentParser, Namespace
+from os import remove
+from os.path import basename, expanduser, isfile, realpath
+
+from cairosvg import svg2png
+
+
+def error(*msg, **kwargs) -> None:
+    """Print to stderr."""
+    if not msg:
+        return
+
+    end: str = kwargs.get("end", "\n")
+    sep: str = kwargs.get("sep", " ")
+    flush: bool = kwargs.get("flush", False)
+
+    print(*msg, sep=sep, end=end, flush=flush, file=sys.stderr)
+
+
+def svg_convert(data: str, path: str) -> None:
+    """Convert SVG data to a PNG file."""
+    parent: str = "/".join(path.split("/")[:-1])
+    base: str = basename(path.rstrip("."))
+    if not re.compile(".*\\.[Pp][Nn][Gg]$").match(base):
+        base += ".png"
+
+    svg2png(bytestring=data, write_to=f"{parent}/{base}")
+
+
+def main() -> int:
+    """Execute main workflow."""
+    parser: ArgumentParser = ArgumentParser(
+        "svg2png",
+        description="Convert an SVG file to PNG format",
+    )
+    parser.add_argument("file", nargs="*", metavar="/path/to/input.svg")
+    parser.add_argument(
+        "-k",
+        "--keep",
+        action="store_true",
+        dest="keep",
+        required=False
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        default="",
+        dest="output",
+        metavar="/path/to/output.png",
+        required=False
+    )
+    ns: Namespace = parser.parse_args()
+
+    keep: bool = ns.keep
+    output: str = realpath(expanduser(ns.output)) if ns.output != "" else ""
+
+    if len(ns.file) > 0:
+        fpath: str = realpath(expanduser(ns.file[0]))
+        if not isfile(fpath):
+            error(f"Not a file `{fpath}`")
+            return 1
+
+        if not re.compile(".*\\.[Ss][Vv][Gg]$").match(fpath):
+            error(f"Not matching: `{fpath}`", file=sys.stderr)
+            return 1
+
+        parent: str = "/".join(fpath.split("/")[:-1])
+        base: str = ".".join(basename(fpath).split(".")[:-1])
+        output = f"{parent}/{base}" if output == "" else output
+
+        file = open(fpath, "r")
+        data: str = "".join(file.read().split("\n"))
+        file.close()
+    elif not sys.stdin.isatty():
+        file = sys.stdin
+        data: str = file.read()
+    else:
+        try:
+            print(sys.argv[1])
+            data: str = sys.argv[1]
+        except IndexError:
+            message = 'need filename as first argument if stdin is not full'
+            raise IndexError(message)
+
+    svg_convert(data, output)
+
+    if not keep and len(ns.file) > 0:
+        remove(fpath)
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
