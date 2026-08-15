@@ -2,16 +2,13 @@
 # -*- coding: utf8 -*-
 """List all files matching the given regex, per file extension."""
 import io
-import re
 import sys
 from argparse import ArgumentParser, Namespace
 from os import walk
-from os.path import expanduser, isfile, realpath
+from os.path import expanduser, realpath
+from re import Pattern, compile
 from sys import stderr, stdout
-from typing import Any, Dict, List, TextIO, Tuple, TypedDict
-
-import argcomplete as ac
-import unidecode
+from typing import Any, Dict, List, TextIO, Tuple
 
 VERBOSE: bool = False
 
@@ -27,8 +24,6 @@ class ArgData:
     kwargs : Dict[str, Any]
         A key-value representation of every parameter to be passed
         to ``ArgumentParser.add_argument()``.
-    completer : argcomplete.DirectoriesCompleter or None
-        The completer object.
 
     Parameters
     ----------
@@ -37,23 +32,18 @@ class ArgData:
     kwargs : Dict[str, Any]
         A key-value representation of every parameter to be passed
         to ``ArgumentParser.add_argument()``.
-    completer : argcomplete.DirectoriesCompleter or None
-        The completer object.
     """
 
     args: List[str]
     kwargs: Dict[str, Any]
-    completer: ac.DirectoriesCompleter | None
 
     def __init__(
         self,
         args: List[str],
         kwargs: Dict[str, Any],
-        completer: ac.DirectoriesCompleter | None
     ):
         self.args = args
         self.kwargs = kwargs
-        self.completer = completer
 
 
 def verb_print(*msg, **kwargs) -> None:
@@ -112,7 +102,7 @@ def die(code: int = 0, *msg, **kwargs) -> None:
     sys.exit(code)
 
 
-def search_file(path: str, query: re.Pattern[str]) -> Tuple[bool, int]:
+def search_file(path: str, query: Pattern[str]) -> Tuple[bool, int]:
     """Search query inside the given file."""
     file: io.TextIOWrapper = io.open(path, encoding="utf-8", mode="r")
     data: str = ""
@@ -169,15 +159,10 @@ def gen_args(data: List[ArgData]) -> Tuple[ArgumentParser, Namespace]:
         raise AssertionError("(find_regexp - gen_args): Bad arguments!")
 
     parser = ArgumentParser(
-        prog="find_regexp",
-        description="List all files matching the given regex, per file extension"
-    )
+        description="List files matching the given regex, per file extension",
+        prog="find_regexp")
     for d in data:
-        if d.completer:
-            parser.add_argument(*d.args, **d.kwargs
-                                ).completer = d.completer
-        else:
-            parser.add_argument(*d.args, **d.kwargs)
+        parser.add_argument(*d.args, **d.kwargs)
 
     return parser, parser.parse_args()
 
@@ -185,7 +170,7 @@ def gen_args(data: List[ArgData]) -> Tuple[ArgumentParser, Namespace]:
 def main() -> int:
     """Execute main workflow."""
     global VERBOSE
-    parser_data: List[ArgData] = [
+    parser, ns = gen_args([
         ArgData(
             args=["directory"],
             kwargs={
@@ -194,58 +179,54 @@ def main() -> int:
                 "metavar": "DIRECTORY",
                 "nargs": "?",
             },
-            completer=ac.DirectoriesCompleter
         ),
         ArgData(
             args=["-c", "--count"],
             kwargs={
                 "action": "store_true",
                 "dest": "count",
-                "help": "Whether to print how many matches were found for each file",
+                "help":
+                "Whether to print how many matches were found for each file",
                 "required": False,
-            },
-            completer=None
-        ),
-        ArgData(
-            args=["-v", "--verbose"],
-            kwargs={
-                "action": "store_true",
-                "dest": "verbose",
-                "help": "Enables verbose mode",
-                "required": False,
-            },
-            completer=None
-        ),
-        ArgData(
-            args=["-e", "--extensions"],
-            kwargs={
-                "action": "extend",
-                "default": [],
-                "dest": "extensions",
-                "help": "The file extensions to search through",
-                "metavar": "FEXT",
-                "nargs": "+",
-            },
-            completer=None
-        ),
-        ArgData(
-            args=["-q", "--query"],
-            kwargs={
-                "dest": "query",
-                "help": "The regex query to search for",
-                "metavar": "QUERY",
-                "nargs": 1,
-                "required": True,
-                "type": str,
-            },
-            completer=None
-        ),
-    ]
-
-    parser, ns = gen_args(parser_data)
+            }),
+        ArgData(args=["-v", "--verbose"],
+                kwargs={
+                    "action": "store_true",
+                    "dest": "verbose",
+                    "help": "Enables verbose mode",
+                    "required": False,
+                }),
+        ArgData(args=["-e", "--extensions"],
+                kwargs={
+                    "action": "extend",
+                    "default": [],
+                    "dest": "extensions",
+                    "help": "The file extensions to search through",
+                    "metavar": "FEXT",
+                    "nargs": "+",
+                    "required": True,
+                }),
+        ArgData(args=["-q", "--query"],
+                kwargs={
+                    "dest": "query",
+                    "help": "The regex query to search for",
+                    "metavar": "QUERY",
+                    "nargs": 1,
+                    "required": True,
+                    "type": str,
+                }),
+        ArgData(args=["-s", "--sort"],
+                kwargs={
+                    "dest": "sort",
+                    "help": "Whether to sort the output",
+                    "required": False,
+                    "action": "store_true",
+                })
+    ])
 
     query: str = ns.query[0]
     VERBOSE = ns.verbose
+    sort: bool = ns.sort
     directory: str = realpath(expanduser(
         ns.directory)) if ns.directory is not None else "."
     extensions: List[str] = ns.extensions
@@ -260,7 +241,10 @@ def main() -> int:
     if query == "":
         die(1, "No query given!")
 
-    comp_query: re.Pattern[str] = re.compile(query)
+    if sort:
+        files.sort()
+
+    comp_query: Pattern[str] = compile(query)
     found: bool = False
     for file in files:
         matched, n_matches = search_file(file, comp_query)
