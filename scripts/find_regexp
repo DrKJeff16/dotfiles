@@ -5,7 +5,7 @@ import io
 import sys
 from argparse import ArgumentParser, Namespace
 from os import walk
-from os.path import expanduser, realpath
+from os.path import expanduser, isdir, isfile, realpath
 from re import Pattern, compile
 from sys import stderr, stdout
 from typing import Any, Dict, List, TextIO, Tuple
@@ -180,15 +180,13 @@ def main() -> int:
                 "nargs": "?",
             },
         ),
-        ArgData(
-            args=["-c", "--count"],
-            kwargs={
-                "action": "store_true",
-                "dest": "count",
-                "help":
-                "Whether to print how many matches were found for each file",
-                "required": False,
-            }),
+        ArgData(args=["-c", "--count"],
+                kwargs={
+                    "action": "store_true",
+                    "dest": "count",
+                    "help": "Prints how many matches were found for each file",
+                    "required": False,
+                }),
         ArgData(args=["-v", "--verbose"],
                 kwargs={
                     "action": "store_true",
@@ -217,10 +215,10 @@ def main() -> int:
                 }),
         ArgData(args=["-s", "--sort"],
                 kwargs={
+                    "action": "store_true",
                     "dest": "sort",
                     "help": "Whether to sort the output",
                     "required": False,
-                    "action": "store_true",
                 })
     ])
 
@@ -233,6 +231,9 @@ def main() -> int:
     count: bool = ns.count
     if len(extensions) == 0:
         die(127, "No extensions given!")
+
+    if not isdir(directory):
+        die(1, f"Not a directory: `{directory}`")
 
     files = find_files(extensions, dir=directory)
     if len(files) == 0:

@@ -9,8 +9,6 @@ from os.path import expanduser, expandvars, isfile, realpath
 from sys import stderr, stdout
 from typing import Any, Dict, List, TextIO, Tuple
 
-import argcomplete as ac
-
 MAXSIZE: int = int(environ.get("HISTFILESIZE", "32500"))
 VERBOSE: bool = False
 
@@ -25,8 +23,6 @@ class ArgData:
         List of options related to this argument (e.g. ``-v``).
     kwargs : Dict[str, Any]
         Dictionary of arguments passed to an argument parser option.
-    completer : argcomplete.FilesCompleter, optional, default=None
-        Optional completer.
 
     Attributes
     ----------
@@ -34,23 +30,18 @@ class ArgData:
         List of options related to this argument (e.g. ``-v``).
     kwargs : Dict[str, Any]
         Dictionary of arguments passed to an argument parser option.
-    completer : argcomplete.FilesCompleter, optional, default=None
-        Optional completer.
     """
 
     args: List[str]
     kwargs: Dict[str, Any]
-    completer: ac.FilesCompleter | None
 
     def __init__(
         self,
         args: List[str],
         kwargs: Dict[str, Any],
-        completer: ac.FilesCompleter | None
     ):
         self.args = args
         self.kwargs = kwargs
-        self.completer = completer
 
 
 def error(*msg, **kwargs) -> None:
@@ -199,7 +190,8 @@ def line_strip(data: str) -> str:
     str
         Stripped line data.
     """
-    return (str(data) if data is not str else data).rstrip("\n").strip(" ").rstrip("/")
+    return (str(data)
+            if data is not str else data).rstrip("\n").strip(" ").rstrip("/")
 
 
 def filter_data(verbose: bool, f: TextIOWrapper) -> str:
@@ -277,15 +269,10 @@ def gen_args(data: List[ArgData]) -> Tuple[ArgumentParser, Namespace]:
 
     parser = ArgumentParser(
         prog="filter_histfile",
-        description="Filter histfile and get rid of duplicates"
-    )
+        description="Filter histfile and get rid of duplicates")
     for d in data:
-        if d.completer:
-            parser.add_argument(*d.args, **d.kwargs).completer = d.completer
-        else:
-            parser.add_argument(*d.args, **d.kwargs)
+        parser.add_argument(*d.args, **d.kwargs)
 
-    ac.autocomplete(parser)
     return parser, parser.parse_args()
 
 
@@ -293,26 +280,20 @@ def main() -> int:
     """Execute main workflow"""
     code = 0
     parser_data: List[ArgData] = [
-        ArgData(
-            args=["-v", "--verbose"],
-            kwargs={
-                "action": "store_true",
-                "help": "Verbose mode",
-                "dest": "verbose",
-                "required": False,
-            },
-            completer=None
-        ),
-        ArgData(
-            args=["-f", "--file"],
-            kwargs={
-                "help": "Absolute path to histfile",
-                "dest": "fpath",
-                "default": "",
-                "nargs": 1,
-            },
-            completer=ac.FilesCompleter
-        ),
+        ArgData(args=["-v", "--verbose"],
+                kwargs={
+                    "action": "store_true",
+                    "help": "Verbose mode",
+                    "dest": "verbose",
+                    "required": False,
+                }),
+        ArgData(args=["-f", "--file"],
+                kwargs={
+                    "help": "Absolute path to histfile",
+                    "dest": "fpath",
+                    "default": "",
+                    "nargs": 1,
+                }),
     ]
 
     parser, args = gen_args(parser_data)

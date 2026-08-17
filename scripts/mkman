@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+_cmd() {
+    [[ $# -eq 0 ]] && return 127
+    while [[ $# -gt 0 ]]; do
+        ! command -v "$1" &> /dev/null && return 1
+        shift
+    done
+    return 0
+}
+
+ELEVATOR=""
+CMD=""
+
+if _cmd 'sudo'; then
+    ELEVATOR="sudo"
+elif _cmd 'doas'; then
+    ELEVATOR="doas"
+fi
+
+if _cmd 'mandb'; then
+    CMD="mandb"
+elif _cmd 'mandoc'; then
+    CMD="makewhatis -Q -T utf8"
+fi
+
+if [[ "${CMD}" != "" ]]; then
+    eval "${ELEVATOR} ${CMD}"
+    exit $?
+fi
+exit 1

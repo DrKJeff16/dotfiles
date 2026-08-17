@@ -2,10 +2,11 @@
 # -*- coding: utf8 -*-
 """Find and replace file contents recursively."""
 import re
-import shutil
 import sys
 from argparse import ArgumentParser, Namespace
 from os import walk
+from os.path import expanduser, isdir, realpath
+from shutil import move
 from sys import stderr
 from tempfile import mkstemp
 from typing import Any, Dict, List, Tuple
@@ -65,13 +66,13 @@ def die(code: int = 0, *msg, **kwargs) -> None:
     sys.exit(code)
 
 
-def find_files(fexts: List[str]) -> List[str]:
+def find_files(directory: str, fexts: List[str]) -> List[str]:
     """Find all the matching file extensions."""
     dir: str
     dirnames: List[str]
     filenames: List[str]
     matches: List[str] = list()
-    for dir, dirnames, filenames in walk(".", followlinks=False):
+    for dir, dirnames, filenames in walk(directory, followlinks=False):
         for file in filenames:
             if "." not in file:
                 continue
@@ -85,14 +86,12 @@ def find_files(fexts: List[str]) -> List[str]:
     return matches
 
 
-def sed(
-    pattern: re.Pattern,
-    replace: str,
-    source: str,
-    verbose: bool,
-    dest: str | None = None,
-    count: int = 0
-) -> None:
+def sed(pattern: re.Pattern,
+        replace: str,
+        source: str,
+        verbose: bool,
+        dest: str | None = None,
+        count: int = 0) -> None:
     """
     Reads a source file and writes to the destination file.
 
@@ -139,7 +138,7 @@ def sed(
     fout.close()
 
     if not dest:
-        shutil.move(name, source)
+        move(name, source)
 
 
 def gen_args(data: List[ArgData]) -> Tuple[ArgumentParser, Namespace]:
@@ -165,8 +164,7 @@ def gen_args(data: List[ArgData]) -> Tuple[ArgumentParser, Namespace]:
 
     parser = ArgumentParser(
         prog="find_regexp",
-        description="List all files matching the given regex, per file extension"
-    )
+        description="List all files matching regex, per file extension")
     for d in data:
         parser.add_argument(*d.args, **d.kwargs)
 
@@ -176,15 +174,13 @@ def gen_args(data: List[ArgData]) -> Tuple[ArgumentParser, Namespace]:
 def main() -> int:
     """Execute main workflow."""
     parser_data: List[ArgData] = [
-        ArgData(
-            args=["queries"],
-            kwargs={
-                "action": "extend",
-                "help": "The sed-like search-and-replace queries (must end with a `g`)",
-                "metavar": "SED_QUERIES",
-                "nargs": "+",
-            }
-        ),
+        ArgData(args=["queries"],
+                kwargs={
+                    "action": "extend",
+                    "help": "sed-like search-and-replace queries",
+                    "metavar": "SED_QUERIES",
+                    "nargs": "+",
+                }),
         ArgData(
             args=["-v", "--verbose"],
             kwargs={
@@ -194,6 +190,14 @@ def main() -> int:
                 "required": False,
             },
         ),
+        ArgData(args=["-d", "--directory-path"],
+                kwargs={
+                    "help": "Path to the directory to search",
+                    "default": ".",
+                    "dest": "directory",
+                    "metavar": "/path/to/dir",
+                    "required": False,
+                }),
         ArgData(
             args=["-e", "--extensions"],
             kwargs={
@@ -213,11 +217,17 @@ def main() -> int:
     queries: str = ns.queries
     extensions: List[str] = ns.extensions
     verbose: bool = ns.verbose
+    directory: str = realpath(
+        expanduser(ns.directory if ns.directory != "" else "."))
+
     if len(extensions) == 0:
         die(127, "No extensions given!")
 
     if len(queries) == 0:
         die(1, "No queries given!")
+
+    if not isdir(directory):
+        die(1, f"Not a directory: {directory}")
 
     sed_queries: List[Tuple[str, str, str, str]] = list()
     for q in queries:
@@ -230,7 +240,7 @@ def main() -> int:
     if len(sed_queries) == 0:
         die(1, "No queries parsed!")
 
-    files = find_files(extensions)
+    files = find_files(directory, extensions)
     if len(files) == 0:
         die(1, "No extensions found!")
 
