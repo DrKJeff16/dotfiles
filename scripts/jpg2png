@@ -24,25 +24,19 @@ def jpg_convert(path: str, output: str) -> None:
 def main() -> int:
     """Execute main workflow."""
     parser: ArgumentParser = ArgumentParser(
-        "jpg2png",
-        description="Convert an JPG file to PNG format"
-    )
+        "jpg2png", description="Convert an JPG file to PNG format")
     parser.add_argument("file", nargs=1, metavar="/path/to/input.jpg")
-    parser.add_argument(
-        "-k",
-        "--keep",
-        action="store_true",
-        dest="keep",
-        required=False
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        default="",
-        dest="output",
-        metavar="/path/to/output.png",
-        required=False
-    )
+    parser.add_argument("-k",
+                        "--keep",
+                        action="store_true",
+                        dest="keep",
+                        required=False)
+    parser.add_argument("-o",
+                        "--output",
+                        default="",
+                        dest="output",
+                        metavar="/path/to/output.png",
+                        required=False)
     ns: Namespace = parser.parse_args()
     output: str = realpath(expanduser(ns.output)) if ns.output != "" else ""
     keep: bool = ns.keep
@@ -58,7 +52,7 @@ def main() -> int:
 
     parent: str = "/".join(fpath.split("/")[:-1])
     base: str = ".".join(basename(fpath).split(".")[:-1])
-    output = f"{parent}/{base}.jpg" if output == "" else output
+    output = f"{parent}/{base}" if output == "" else output
 
     jpg_convert(fpath, output)
 
