@@ -1,26 +1,15 @@
-hl.monitor({
-	output = "",
-	mode = "preferred",
-	position = "auto",
-	scale = "1",
-})
+hl.monitor({ output = "", mode = "preferred", position = "auto", scale = "1" })
 
 local terminal = "wezterm"
 local fileManager = "thunar"
 local menu = "hyprlauncher"
 
-hl.on("hyprland.start", function()
-	hl.exec_cmd(
-		"systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP & dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=Hyprland"
-	)
-	hl.exec_cmd("systemctl --user start hyprpolkitagent")
-	hl.exec_cmd("dbus-update-activation-environment --systemd --all")
-	hl.exec_cmd("/usr/lib64/polkit-kde-authentication-agent-1")
-	hl.exec_cmd("/usr/bin/hypr_portal")
-	hl.exec_cmd("wl-paste --type text --watch cliphist store & wl-paste --type image --watch cliphist store")
-	hl.exec_cmd("waybar & hyprpaper & hyprsunset & hyprlauncher -d")
-	hl.exec_cmd(terminal)
-end)
+---@param cmds string[]
+local function cmd(cmds)
+	for _, command in ipairs(cmds) do
+		hl.exec_cmd(command)
+	end
+end
 
 ---@param env table<string, string>
 local function set_env(env)
@@ -51,7 +40,7 @@ hl.config({
 	xwayland = { force_zero_scaling = true },
 	ecosystem = { enforce_permissions = true },
 	general = {
-		gaps_in = 2,
+		gaps_in = 1,
 		gaps_out = 10,
 		border_size = 0,
 		col = {
@@ -62,17 +51,13 @@ hl.config({
 		allow_tearing = true,
 		layout = "master",
 	},
-
 	decoration = {
 		rounding = 10,
 		rounding_power = 4,
-		active_opacity = 1.0,
-		inactive_opacity = 0.9,
-		shadow = { enabled = true, range = 4, render_power = 3, color = 0xee1a1a1a },
+		shadow = { enabled = true, range = 4, render_power = 3 },
 		blur = { enabled = true, size = 3, passes = 1, vibrancy = 0.1696 },
 	},
 	animations = { enabled = true },
-	master = { new_status = "master" },
 	dwindle = { preserve_split = true },
 	scrolling = { fullscreen_on_one_column = true },
 	misc = {
@@ -96,27 +81,24 @@ hl.config({
 	},
 })
 
----@overload fun(perms: { [1]: string, [2]: string, [3]: string }[])
----@overload fun(perms: { binary: string, type: string, mode: string }[])
+---@param perms ({ [1]: string, [2]: string, [3]: string }|HL.PermissionSpec)[]
 local function set_permissions(perms)
 	for _, perm in ipairs(perms) do
-		if perm.binary and perm.type and perm.mode then
-			---@cast perm { binary: string, type: string, mode: string }
-			hl.permission(perm)
-		else
-			---@cast perm { [1]: string, [2]: string, [3]: string }
-			hl.permission({
-				binary = perm[1],
-				type = perm[2],
-				mode = perm[3],
-			})
-		end
+		hl.permission((perm.binary and perm.type and perm.mode) and perm or {
+			binary = perm[1],
+			type = perm[2],
+			mode = perm[3],
+		})
 	end
 end
 
 set_permissions({
 	{ "/usr/(bin|local/bin)/grim", "screencopy", "allow" },
-	{ "/usr/(lib|libexec|lib64)/xdg-desktop-portal-hyprland", "screencopy", "allow" },
+	{
+		"/usr/(lib|libexec|lib64|local/lib|local/libexec|local/lib64)/xdg-desktop-portal-hyprland",
+		"screencopy",
+		"allow",
+	},
 	{ "/usr/(bin|local/bin)/hyprpm", "plugin", "allow" },
 	{ "/usr/(bin|local/bin)/grim", "screencopy", "allow" },
 	{ "/usr/(bin|local/bin)/hypridle", "screencopy", "allow" },
@@ -143,7 +125,7 @@ set_curve({
 	easy = { type = "spring", mass = 1, stiffness = 71.2633, dampening = 15.8273644 },
 })
 
----@param animations table[]
+---@param animations { leaf?: string, enabled?: boolean, speed?: number, bezier?: string, style?: string }[]
 local function set_animations(animations)
 	for _, animation in ipairs(animations) do
 		hl.animation(animation)
@@ -170,27 +152,54 @@ set_animations({
 	{ leaf = "zoomFactor", enabled = true, speed = 7, bezier = "quick" },
 })
 
-hl.workspace_rule({ workspace = "w[tv1]", gaps_out = 0, gaps_in = 0 })
-hl.workspace_rule({ workspace = "f[1]", gaps_out = 0, gaps_in = 0 })
+---@overload fun(rule_type: "workspace", rules: HL.WorkspaceRuleSpec[])
+---@overload fun(rule_type: "window", rules: HL.WindowRuleSpec[])
+---@overload fun(rule_type: "layer", rules: HL.LayerRuleSpec[])
+local function set_rules(rule_type, rules)
+	if rule_type == "workspace" then
+		---@cast rules HL.WorkspaceRuleSpec[]
+		for _, rule in ipairs(rules) do
+			hl.workspace_rule(rule)
+		end
+	elseif rule_type == "window" then
+		---@cast rules HL.WindowRuleSpec[]
+		for _, rule in ipairs(rules) do
+			hl.window_rule(rule)
+		end
+	elseif rule_type == "layer" then
+		---@cast rules HL.LayerRuleSpec[]
+		for _, rule in ipairs(rules) do
+			hl.layer_rule(rule)
+		end
+	end
+end
 
-hl.window_rule({
-	name = "no-gaps-wtv1",
-	match = { float = false, workspace = "w[tv1]" },
-	border_size = 0,
-	rounding = 0,
-})
-hl.window_rule({
-	name = "no-gaps-f1",
-	match = { float = false, workspace = "f[1]" },
-	border_size = 0,
-	rounding = 0,
+set_rules(
+	"workspace",
+	{ { workspace = "w[tv1]", gaps_out = 0, gaps_in = 0 }, { workspace = "f[1]", gaps_out = 0, gaps_in = 0 } }
+)
+
+set_rules("layer", { { name = "waybar-blur", match = { namespace = "waybar" }, blur = true } })
+
+set_rules("window", {
+	{ name = "no-gaps-wtv1", match = { float = false, workspace = "w[tv1]" }, border_size = 0, rounding = 0 },
+	{ name = "no-gaps-f1", match = { float = false, workspace = "f[1]" }, border_size = 0, rounding = 0 },
+	{ match = { float = false, workspace = "w[tv1]" }, border_size = 0 },
+	{ match = { float = false, workspace = "w[tv1]" }, rounding = 0 },
+	{ match = { float = false, workspace = "f[1]" }, border_size = 0 },
+	{ match = { float = false, workspace = "f[1]" }, rounding = 0 },
+	{ name = "suppress-maximize-events", match = { class = ".*" }, suppress_event = "maximize" },
+	{
+		name = "fix-xwayland-drags",
+		match = { class = "^$", title = "^$", xwayland = true, float = true, fullscreen = false, pin = false },
+		no_focus = true,
+	},
+	{ name = "move-hyprland-run", match = { class = "hyprland-run" }, move = "20 monitor_h-120", float = true },
+	{ name = "firefox-no-blur", match = { class = "firefox" }, no_blur = true },
+	{ name = "pinentry-focus", match = { class = "(pinentry-)(.*)" }, stay_focused = true },
 })
 
-hl.gesture({
-	fingers = 3,
-	direction = "horizontal",
-	action = "workspace",
-})
+hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
 
 ---------------------
 ---- KEYBINDINGS ----
@@ -198,37 +207,67 @@ hl.gesture({
 
 local mainMod = "SUPER" -- Sets "Windows" key as main modifier
 
--- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
-hl.bind(mainMod .. " + Q", hl.dsp.exec_cmd(terminal))
-hl.bind(mainMod .. " + C", hl.dsp.window.close())
-hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("firefox"))
-hl.bind(
-	mainMod .. " + M",
-	hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'")
-)
-hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
-hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(menu))
-hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
-hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit")) -- dwindle only
+---@class MapSpec
+---@field [1] string
+---@field [2] HL.Dispatcher
+---@field [3]? { prefix?: { main?: boolean }|string[], suffix?: { main?: boolean }|string[], opts?: HL.BindOptions }
 
--- Move focus with mainMod + arrow keys
-hl.bind(mainMod .. " + left", hl.dsp.focus({ direction = "left" }))
-hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
-hl.bind(mainMod .. " + up", hl.dsp.focus({ direction = "up" }))
-hl.bind(mainMod .. " + down", hl.dsp.focus({ direction = "down" }))
+---@param specs MapSpec[]
+local function map(specs)
+	for _, spec in ipairs(specs) do
+		local lhs = spec[1]
+		local rhs = spec[2]
+		local map_opts = spec[3] or { prefix = { main = true } }
+		local opts = map_opts.opts or nil
+		if map_opts.prefix and type(map_opts.prefix) == "table" then
+			for k, v in pairs(map_opts.prefix) do
+				lhs = ("%s + %s"):format((k == "main" and v) and mainMod or v, lhs)
+			end
+		end
+		if map_opts.suffix and type(map_opts.suffix) == "table" then
+			for k, v in pairs(map_opts.suffix) do
+				lhs = ("%s + %s"):format(lhs, (k == "main" and v) and mainMod or v)
+			end
+		end
+
+		hl.bind(lhs, rhs, opts)
+	end
+end
+
+-- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
+local keys = {
+	{ "Q", hl.dsp.exec_cmd(terminal) },
+	{ "C", hl.dsp.window.close() },
+	{ "W", hl.dsp.exec_cmd("firefox") },
+	{
+		"M",
+		hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"),
+	},
+	{ "E", hl.dsp.exec_cmd(fileManager) },
+	{ "V", hl.dsp.window.float({ action = "toggle" }) },
+	{ "R", hl.dsp.exec_cmd(menu) },
+	{ "P", hl.dsp.window.pseudo() },
+	{ "J", hl.dsp.layout("togglesplit") },
+
+	{ "left", hl.dsp.focus({ direction = "left" }) },
+	{ "right", hl.dsp.focus({ direction = "right" }) },
+	{ "up", hl.dsp.focus({ direction = "up" }) },
+	{ "down", hl.dsp.focus({ direction = "down" }) },
+	{ "S", hl.dsp.workspace.toggle_special("magic") },
+	{ "S", hl.dsp.window.move({ workspace = "special:magic" }), { prefix = { main = true, "SHIFT" } } },
+}
 
 -- Switch workspaces with mainMod + [0-9]
 -- Move active window to a workspace with mainMod + SHIFT + [0-9]
 for i = 1, 10 do
 	local key = i % 10 -- 10 maps to key 0
-	hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }))
-	hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }))
+	table.insert(keys, { key, hl.dsp.focus({ workspace = i }) })
+	table.insert(keys, { "SHIFT + " .. key, hl.dsp.window.move({ workspace = i }) })
 end
 
+map(keys)
+
 -- Example special workspace (scratchpad)
-hl.bind(mainMod .. " + S", hl.dsp.workspace.toggle_special("magic"))
-hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:magic" }))
 
 -- Scroll through existing workspaces with mainMod + scroll
 hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
@@ -269,38 +308,122 @@ hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = tru
 hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
 hl.bind("PRINT", hl.dsp.exec_cmd("hyprshot -z -m region"))
 
-hl.layer_rule({ name = "waybar-blur", match = { namespace = "waybar" }, blur = true })
+hl.on("hyprland.start", function()
+	cmd({
+		"systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP & dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=Hyprland",
+		"dbus-update-activation-environment --systemd --all",
+		"systemctl --user start hyprpolkitagent",
+		-- "/usr/lib64/polkit-kde-authentication-agent-1",
+		"wl-paste --type text --watch cliphist store",
+		"wl-paste --type image --watch cliphist store",
+		"waybar",
+		"hyprpaper",
+		"hyprsunset",
+		"hyprlauncher -d",
+		"hypridle",
+		terminal,
+		"hyprlock",
+	})
+end)
 
-hl.workspace_rule({ workspace = "w[tv1]", gaps_out = 0, gaps_in = 0 })
-hl.workspace_rule({ workspace = "f[1]", gaps_out = 0, gaps_in = 0 })
+if hl.plugin.hyprglass then
+	local hg = hl.plugin.hyprglass
 
-hl.window_rule({ match = { float = false, workspace = "w[tv1]" }, border_size = 0 })
-hl.window_rule({ match = { float = false, workspace = "w[tv1]" }, rounding = 0 })
-hl.window_rule({ match = { float = false, workspace = "f[1]" }, border_size = 0 })
-hl.window_rule({ match = { float = false, workspace = "f[1]" }, rounding = 0 })
-hl.window_rule({
-	-- Ignore maximize requests from all apps. You'll probably like this.
-	name = "suppress-maximize-events",
-	match = { class = ".*" },
-	suppress_event = "maximize",
-})
-hl.window_rule({
-	name = "fix-xwayland-drags",
-	match = {
-		class = "^$",
-		title = "^$",
-		xwayland = true,
-		float = true,
-		fullscreen = false,
-		pin = false,
-	},
-	no_focus = true,
-})
-hl.window_rule({
-	name = "move-hyprland-run",
-	match = { class = "hyprland-run" },
-	move = "20 monitor_h-120",
-	float = true,
-})
-hl.window_rule({ name = "firefox-no-blur", match = { class = "firefox" }, no_blur = true })
-hl.window_rule({ name = "pinentry-focus", match = { class = "(pinentry-)(.*)" }, stay_focused = true })
+	hg.config({
+		default_theme = "dark",
+		default_preset = "clear",
+		tint_color = 0x8899aa22,
+
+		brightness = 0.9,
+		dark = { brightness = 0.82 },
+		light = { adaptive_boost = 0.5 },
+
+		layers = { enabled = 1 },
+	})
+
+	-- Layer surfaces: each call whitelists the namespace and configures it
+	hg.layer("waybar", { preset = "subtle", mask_threshold = 0.05 })
+	hg.layer("swaync")
+	hg.layer("quickshell:bezel", { preset = "ui", mask_threshold = 0.3 })
+	hg.layer("debug-panel", { exclude = true })
+
+	-- Presets
+	hg.preset("clear", {
+		glass_opacity = 0.8,
+		blur_strength = 1.5,
+		dark = { brightness = 0.7 },
+		light = { brightness = 1.2 },
+	})
+
+	hg.preset("contrasted", {
+		inherits = "high_contrast",
+		contrast = 1.2,
+		adaptive_dim = 1.5,
+		dark = { tint_color = 0x02142aa9 },
+	})
+end
+
+if hl.plugin.darkwindow ~= nil then
+	-- To modify the uniforms of an already existing shader, create a new shader and set the uniforms you want
+	hl.plugin.darkwindow.load_shader("tintRed", {
+		from = "tint",
+		args = "tintColor=[1 0 0] tintStrength=0.1",
+
+		-- the predefined shaders support animations, but they are disabled by default, so
+		-- window rules don't get animated, but you can override the animation speeds here
+		fade_in_speed = 3, -- value in ds
+		fade_out_speed = 3,
+	})
+
+	-- Then to apply the shader to a window you can use window rules
+	hl.window_rule({
+		match = { class = "pb250.exe" },
+		["darkwindow:shade"] = "invert",
+	})
+
+	-- Uniforms can also be passed on the fly
+	hl.window_rule({
+		match = { fullscreen = true },
+		["darkwindow:shade"] = hl.plugin.darkwindow.build_rule_effect({
+			shader = "tint",
+			args = {
+				tintColor = { 0, 0.3, 0 },
+			},
+		}),
+	})
+
+	-- Same for layers
+	hl.layer_rule({
+		match = { namespace = "waybar" },
+		["darkwindow:shade"] = hl.plugin.darkwindow.build_rule_effect({
+			shader = "tint",
+		}),
+	})
+
+	-- Or use a dispatcher
+	hl.bind(
+		mainMod .. " + I",
+		hl.plugin.darkwindow.dsp_shade({
+			shader = "invert",
+
+			-- see https://wiki.hypr.land/Configuring/Basics/Dispatchers/#window
+			-- if no window field is specified, it targets the active window
+			window = "class:nemo",
+		})
+	)
+
+	hl.bind(
+		mainMod .. " + O",
+		hl.plugin.darkwindow.dsp_shade({
+			shader = "chromakey",
+
+			-- also works with on the fly overriding
+			args = {
+				bkg = { 0.234, 0.234, 0.234 },
+				targetOpacity = 0.5,
+			},
+			fade_in_speed = 3,
+			fade_out_speed = 3,
+		})
+	)
+end
