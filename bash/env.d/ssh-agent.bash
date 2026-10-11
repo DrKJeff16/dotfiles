@@ -11,7 +11,7 @@ if [ "${gnupg_SSH_AUTH_SOCK_by:-0}" -ne $$ ]; then
     export SSH_AUTH_SOCK
 fi
 
-# eval "$(ssh-agent)" &> /dev/null
-
-! pgrep -u "$USER" ssh-agent &> /dev/null && ssh-agent -t 1h >| "$XDG_RUNTIME_DIR/ssh-agent.env"
-! [[ -f "$SSH_AUTH_SOCK" ]] && "$XDG_RUNTIME_DIR/ssh-agent.env" &> /dev/null
+if ! pgrep -u "$USER" ssh-agent &> /dev/null; then
+    ssh-agent -t 1h | tee "$XDG_RUNTIME_DIR/ssh-agent.env" &> /dev/null
+    ! [[ -f "$SSH_AUTH_SOCK" ]] && . "$XDG_RUNTIME_DIR"/ssh-agent.env &> /dev/null
+fi

@@ -1,5 +1,8 @@
 #
 # ~/.bash_logout
 #
+
+killall ssh-agent
+
 clear
 reset

@@ -49,8 +49,7 @@ _wezterm() {
     cmd=""
     opts=""
 
-    for i in "${COMP_WORDS[@]:0:COMP_CWORD}"
-    do
+    for i in "${COMP_WORDS[@]:0:COMP_CWORD}"; do
         case "${cmd},${i}" in
             ",$1")
                 cmd="wezterm"
@@ -324,8 +323,8 @@ _wezterm() {
     case "${cmd}" in
         wezterm)
             opts="-n -h -V --skip-config --config-file --config --help --version start blocking-start ssh serial connect ls-fonts show-keys cli imgcat set-working-directory record replay shell-completion help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -352,13 +351,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__blocking__start)
             opts="-e -h --no-auto-connect --always-new-process --new-tab --cwd --class --workspace --position --domain --attach --help [PROG]..."
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -389,13 +388,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli)
             opts="-h --no-auto-start --prefer-mux --class --help list list-clients proxy tlscreds move-pane-to-new-tab split-pane spawn send-text get-text activate-pane-direction get-pane-direction kill-pane activate-pane adjust-pane-size activate-tab set-tab-title set-window-title rename-workspace zoom-pane help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -407,13 +406,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__activate__pane)
             opts="-h --pane-id --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -425,13 +424,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__activate__pane__direction)
             opts="-h --pane-id --help Up Down Left Right Next Prev"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -443,13 +442,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__activate__tab)
             opts="-h --tab-id --tab-index --tab-relative --no-wrap --pane-id --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -473,13 +472,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__adjust__pane__size)
             opts="-h --pane-id --amount --help Up Down Left Right Next Prev"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -495,13 +494,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__get__pane__direction)
             opts="-h --pane-id --help Up Down Left Right Next Prev"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -513,13 +512,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__get__text)
             opts="-h --pane-id --start-line --end-line --escapes --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -539,13 +538,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__help)
             opts="list list-clients proxy tlscreds move-pane-to-new-tab split-pane spawn send-text get-text activate-pane-direction get-pane-direction kill-pane activate-pane adjust-pane-size activate-tab set-tab-title set-window-title rename-workspace zoom-pane help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -553,13 +552,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__help__activate__pane)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -567,13 +566,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__help__activate__pane__direction)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -581,13 +580,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__help__activate__tab)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -595,13 +594,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__help__adjust__pane__size)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -609,13 +608,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__help__get__pane__direction)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -623,13 +622,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__help__get__text)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -637,13 +636,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__help__help)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -651,13 +650,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__help__kill__pane)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -665,13 +664,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__help__list)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -679,13 +678,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__help__list__clients)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -693,13 +692,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__help__move__pane__to__new__tab)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -707,13 +706,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__help__proxy)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -721,13 +720,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__help__rename__workspace)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -735,13 +734,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__help__send__text)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -749,13 +748,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__help__set__tab__title)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -763,13 +762,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__help__set__window__title)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -777,13 +776,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__help__spawn)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -791,13 +790,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__help__split__pane)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -805,13 +804,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__help__tlscreds)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -819,13 +818,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__help__zoom__pane)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -833,13 +832,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__kill__pane)
             opts="-h --pane-id --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -851,13 +850,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__list)
             opts="-h --format --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -869,13 +868,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__list__clients)
             opts="-h --format --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -887,13 +886,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__move__pane__to__new__tab)
             opts="-h --pane-id --window-id --new-window --workspace --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -913,13 +912,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__proxy)
             opts="-h --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -927,13 +926,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__rename__workspace)
             opts="-h --workspace --pane-id --help <NEW_WORKSPACE>"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -949,13 +948,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__send__text)
             opts="-h --pane-id --no-paste --help [TEXT]"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -967,13 +966,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__set__tab__title)
             opts="-h --tab-id --pane-id --help <TITLE>"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -989,13 +988,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__set__window__title)
             opts="-h --window-id --pane-id --help <TITLE>"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1011,13 +1010,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__spawn)
             opts="-h --pane-id --domain-name --window-id --new-window --cwd --workspace --help [PROG]..."
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1048,13 +1047,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__split__pane)
             opts="-h --pane-id --horizontal --left --right --top --bottom --top-level --cells --percent --cwd --move-pane-id --help [PROG]..."
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1085,13 +1084,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__tlscreds)
             opts="-h --pem --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1099,13 +1098,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__cli__zoom__pane)
             opts="-h --pane-id --zoom --unzoom --toggle --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1117,13 +1116,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__connect)
             opts="-h --new-tab --class --workspace --position --help <DOMAIN_NAME> [PROG]..."
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1143,13 +1142,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help)
             opts="start blocking-start ssh serial connect ls-fonts show-keys cli imgcat set-working-directory record replay shell-completion help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1157,13 +1156,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__blocking__start)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1171,13 +1170,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__cli)
             opts="list list-clients proxy tlscreds move-pane-to-new-tab split-pane spawn send-text get-text activate-pane-direction get-pane-direction kill-pane activate-pane adjust-pane-size activate-tab set-tab-title set-window-title rename-workspace zoom-pane"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1185,13 +1184,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__cli__activate__pane)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1199,13 +1198,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__cli__activate__pane__direction)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1213,13 +1212,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__cli__activate__tab)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1227,13 +1226,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__cli__adjust__pane__size)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1241,13 +1240,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__cli__get__pane__direction)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1255,13 +1254,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__cli__get__text)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1269,13 +1268,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__cli__kill__pane)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1283,13 +1282,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__cli__list)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1297,13 +1296,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__cli__list__clients)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1311,13 +1310,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__cli__move__pane__to__new__tab)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1325,13 +1324,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__cli__proxy)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1339,13 +1338,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__cli__rename__workspace)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1353,13 +1352,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__cli__send__text)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1367,13 +1366,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__cli__set__tab__title)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1381,13 +1380,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__cli__set__window__title)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1395,13 +1394,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__cli__spawn)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1409,13 +1408,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__cli__split__pane)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1423,13 +1422,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__cli__tlscreds)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1437,13 +1436,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__cli__zoom__pane)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1451,13 +1450,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__connect)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1465,13 +1464,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__help)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1479,13 +1478,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__imgcat)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1493,13 +1492,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__ls__fonts)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1507,13 +1506,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__record)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1521,13 +1520,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__replay)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1535,13 +1534,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__serial)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1549,13 +1548,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__set__working__directory)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1563,13 +1562,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__shell__completion)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1577,13 +1576,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__show__keys)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1591,13 +1590,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__ssh)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1605,13 +1604,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__help__start)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1619,13 +1618,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__imgcat)
             opts="-h --width --height --no-preserve-aspect-ratio --position --no-move-cursor --hold --tmux-passthru --max-pixels --no-resample --resample-format --resample-filter --resize --show-resample-timing --help [FILE_NAME]"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1665,13 +1664,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__ls__fonts)
             opts="-h --list-system --text --codepoints --rasterize-ascii --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1687,13 +1686,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__record)
             opts="-o -h --cwd --help [PROG]..."
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1709,13 +1708,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__replay)
             opts="-h --explain --explain-only --cat --help <CAST_FILE>"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1723,13 +1722,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__serial)
             opts="-h --baud --class --position --help <PORT>"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1749,13 +1748,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__set__working__directory)
             opts="-h --tmux-passthru --help [CWD] [HOST]"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1767,13 +1766,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__shell__completion)
             opts="-h --shell --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1785,13 +1784,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__show__keys)
             opts="-h --lua --key-table --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1803,13 +1802,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__ssh)
             opts="-o -v -h --ssh-option --class --position --help <USER_AT_HOST_AND_PORT> [PROG]..."
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1833,13 +1832,13 @@ _wezterm() {
                     COMPREPLY=()
                     ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
         wezterm__start)
             opts="-e -h --no-auto-connect --always-new-process --new-tab --cwd --class --workspace --position --domain --attach --help [PROG]..."
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]]; then
+                COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
                 return 0
             fi
             case "${prev}" in
@@ -1858,11 +1857,17 @@ _wezterm() {
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
-                --position) COMPREPLY=($(compgen -f "${cur}")); return 0 ;;
-                --domain) COMPREPLY=($(compgen -f "${cur}")); return 0 ;;
+                --position)
+                            COMPREPLY=($(compgen -f "${cur}"))
+                                                                return 0
+                                                                         ;;
+                --domain)
+                          COMPREPLY=($(compgen -f "${cur}"))
+                                                              return 0
+                                                                       ;;
                 *) COMPREPLY=() ;;
             esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            COMPREPLY=($( compgen -W "${opts}" -- "${cur}"))
             return 0
             ;;
     esac

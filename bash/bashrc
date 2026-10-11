@@ -159,6 +159,7 @@ fi
 # From here on, load the rest if in an interactive shell
 [[ $- != *i* ]] && return
 shopt -s checkwinsize
+shopt -s no_empty_cmd_completion
 export LINES COLUMNS # Export interactive shell dimensions
 
 _cmd 'filter_histfile' && filter_histfile # Filter history, dedup it

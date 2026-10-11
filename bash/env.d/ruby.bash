@@ -1,10 +1,11 @@
-! which 'gem' &> /dev/null && return
+if ! _cmd 'ruby' || ! which 'gem' &> /dev/null; then
+    return
+fi
 
 GEM_HOME="$(gem env user_gemhome 2> /dev/null)"
 export GEM_HOME
 
 __append2path "$GEM_HOME/bin"
 
-if _cmd 'rbenv'; then
-    eval "$(rbenv init -)"
-fi
+! _cmd 'rbenv' && return
+eval "$(rbenv init -)"

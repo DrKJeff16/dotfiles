@@ -1,9 +1,6 @@
-if [[ -d /usr/share/vulkan/icd.d ]]; then
-    export VK_ICD_DIR=/usr/share/vulkan/icd.d
-else
-    return
-fi
+! [[ -d /usr/share/vulkan/icd.d ]] && return
 
+export VK_ICD_DIR=/usr/share/vulkan/icd.d
 if [[ -f "$VK_ICD_DIR/radeon_icd.json" ]]; then
     if [[ -z "$VK_DRIVER_FILES" ]]; then
         VK_DRIVER_FILES="$VK_ICD_DIR/radeon_icd.json"

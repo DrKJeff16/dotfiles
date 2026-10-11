@@ -1,4 +1,4 @@
-if [[ "$UID" == 0 ]] || ! _cmd 'steam-runtime' || ! [[ -d "$HOME/.local/share/Steam" ]]; then
+if [[ "$UID" == 0 ]] || ! _cmd 'steam' 'steam-runtime' || ! [[ -d "$HOME/.local/share/Steam" ]]; then
     return
 fi
 
