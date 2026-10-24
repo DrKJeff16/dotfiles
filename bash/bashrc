@@ -10,16 +10,17 @@ unset LC_COLLATE # STOP MESSING WITH MY `ls` OUTPUT!
 set -o noclobber
 
 export HISTCONTROL="erasedups:ignoreboth"
-export HISTFILESIZE=32500
+export HISTFILESIZE=36000
+export HISTSIZE=32500
 
 shopt -s histappend
 shopt -s expand_aliases
 
-[[ -d "$HOME/.build" ]] && export BUILDD="$HOME/.build"
-[[ -d "$HOME/.org" ]] && export ORGD="$HOME/.org"
-[[ -d "$HOME/.config" ]] && export CONFD="$HOME/.config"
-[[ -d "$HOME/.env.d" ]] && export ENVD="$HOME/.env.d"
-[[ -d "$HOME/Templates" ]] && export TEMPLD="$HOME/Templates"
+_is_dir "$HOME/.build" && export BUILDD="$HOME/.build"
+_is_dir "$HOME/.org" && export ORGD="$HOME/.org"
+_is_dir "$HOME/.config" && export CONFD="$HOME/.config"
+_is_dir "$HOME/.env.d" && export ENVD="$HOME/.env.d"
+_is_dir "$HOME/Templates" && export TEMPLD="$HOME/Templates"
 
 # Print all args `stderr`
 error() {
@@ -41,63 +42,76 @@ _cmd() {
         command -v "$1" &> /dev/null || return 1
         shift
     done
-
     return 0
 }
 export -f _cmd
 complete -c _cmd
 
+# Check whether a given console command is available in `PATH`
+_cmd_which() {
+    if ! _cmd 'which'; then
+        error "\`which\` is not available!"
+        return 1
+    fi
+    if [[ $# -eq 0 ]]; then
+        error "What command?"
+        return 127
+    fi
+
+    while [[ $# -gt 0 ]]; do
+        command which "$1" &> /dev/null || return 1
+        shift
+    done
+    return 0
+}
+export -f _cmd_which
+complete -c _cmd_which
+
 export FUNCFILE="$HOME/.bash_functions"
-if [[ -f "$FUNCFILE" ]] && [[ -r "$FUNCFILE" ]]; then
-    # shellcheck source=./.bash_functions
-    . "$FUNCFILE"
-fi
+
+# shellcheck source=./.bash_functions
+_file_readable "$FUNCFILE" && . "$FUNCFILE"
 
 _cmd '_create_dotlocals' && _create_dotlocals
 
-PATHS=(
-    "$HOME/.local/bin"
-    "$HOME/.bin"
-    "$HOME/.bin/cbin"
-    "$HOME/.cargo/bin"
-)
+if _cmd '__append2path'; then
+    for D in "$HOME/.local/bin" "$HOME/.bin" "$HOME/.bin/cbin" "$HOME/.cargo/bin"; do
+        __append2path "$D"
+    done
+    unset D
+fi
 
-for D in "${PATHS[@]}"; do
-    __append2path "$D"
-done
-unset PATHS D
-
-if [[ -d "$ENVD" ]]; then
+if _is_dir "$ENVD" && _cmd '__cond_src'; then
     for F in "$ENVD"/*; do
         __cond_src "$F"
     done
     unset F
 fi
 
-[[ -d "$HOME/Documents" ]] && export DOC_D="$HOME/Documents"
+_is_dir "$HOME/Documents" && export DOC_D="$HOME/Documents"
 
-EDITOR='nano'
-VISUAL='nano'
+export EDITOR='nano'
+export VISUAL='nano'
 
-[[ -f "$HOME/.nanorc" ]] && export NANORC="$HOME/.nanorc"
-[[ -d "$HOME/.nano" ]] && export DOT_NANO="$HOME/.nano"
-! [[ -d "$HOME/.cache/nano" ]] && mkdir -p "$HOME/.cache/nano"
+_is_file "$HOME/.nanorc" && export NANORC="$HOME/.nanorc"
+_is_file "$HOME/.tmux.conf" && export TMUX_CFG="$HOME/.tmux.conf"
 
-[[ -f "$HOME/.tmux.conf" ]] && export TMUX_CFG="$HOME/.tmux.conf"
+_is_dir "$HOME/.nano" && export DOT_NANO="$HOME/.nano"
+! _is_dir "$HOME/.cache/nano" && mkdir -p "$HOME/.cache/nano"
 
 if _cmd 'emacs'; then
-    [[ -d "$HOME/.emacs.d" ]] && export SPC_D="$HOME/.emacs.d"
-    [[ -f "$HOME/.spacemacs" ]] && export DOT_SPC="$HOME/.spacemacs"
+    _is_dir "$HOME/.emacs.d" && export SPC_D="$HOME/.emacs.d"
+    _is_file "$HOME/.spacemacs" && export DOT_SPC="$HOME/.spacemacs"
 
-    EDITOR='emacs'
-    VISUAL='emacs'
+    export EDITOR='emacs'
+    export VISUAL='emacs'
 fi
 if _cmd 'vim'; then
     export VIMRC="$HOME/.vimrc"
-    [[ -d "$HOME/.vim" ]] && export DOT_VIM="$HOME/.vim"
+    _is_dir "$HOME/.vim" && export DOT_VIM="$HOME/.vim"
 
-    EDITOR='vim'
-    VISUAL='vim'
+    export EDITOR='vim'
+    export VISUAL='vim'
 fi
 if _cmd 'nvim'; then
     export NVIM_CFG="$CONFD/nvim"
@@ -105,54 +119,45 @@ if _cmd 'nvim'; then
     export NVIMRC="$NVIM_CFG/init.lua"
     export MANPAGER='nvim +Man!'
 
-    EDITOR='nvim'
-    VISUAL='nvim'
+    export EDITOR='nvim'
+    export VISUAL='nvim'
 fi
 export EDITOR VISUAL
 
-PAGER='more'
+export PAGER='more'
 if _cmd 'less'; then
-    PAGER='less'
+    export PAGER='less'
     export LESS='-R --use-color -Dd+g$Du+r$'
 fi
-export PAGER
 
 if _cmd 'man'; then
-    if [[ -z ${MANPAGER+X} ]]; then
-        export MANPAGER="less -R --use-color -Dd+g -Du+r"
-    fi
+    [[ -z ${MANPAGER+X} ]] && export MANPAGER="less -R --use-color -Dd+g -Du+r"
+
     MANPATH=""
-    [[ -d /usr/man ]] && MANPATH="/usr/man:$MANPATH"
-    [[ -d /usr/share/man ]] && MANPATH="/usr/share/man:$MANPATH"
-    [[ -d /usr/local/man ]] && MANPATH="/usr/local/man:$MANPATH"
-    [[ -d /usr/local/share/man ]] && MANPATH="/usr/local/share/man:$MANPATH"
+    _is_dir /usr/man && MANPATH="/usr/man:$MANPATH"
+    _is_dir /usr/share/man && MANPATH="/usr/share/man:$MANPATH"
+    _is_dir /usr/local/man && MANPATH="/usr/local/man:$MANPATH"
+    _is_dir /usr/local/share/man && MANPATH="/usr/local/share/man:$MANPATH"
     export MANPATH
     export MANROFFOPT="-P -c"
 fi
 
-SRCF=(
-    "/usr/share/bash-complete-alias/complete_alias"
-    "/usr/share/git/completion/git-completion.bash"
-    "/usr/share/bash-completion/bash_completion"
-    "/usr/share/doc/pkgfile/command-not-found.bash"
-)
-for F in "${SRCF[@]}"; do
-    __cond_src "$F"
-done
-unset SRCF
-unset F
+if _cmd '__cond_src'; then
+    for F in "/usr/share/bash-complete-alias/complete_alias" "/usr/share/bash-completion/bash_completion" "/usr/share/git/completion/git-completion.bash" "/usr/share/doc/pkgfile/command-not-found.bash"; do
+        __cond_src "$F"
+    done
+    unset F
+fi
 
 export ALIASFILE="$HOME/.bash_aliases"
-if [[ -f "$ALIASFILE" ]] && [[ -r "$ALIASFILE" ]]; then
-    # shellcheck source=./.bash_aliases
-    . "$ALIASFILE"
-fi
+_is_file "$HOME/.bash_completion" && export COMPFILE="$HOME/.bash_completion"
 
-[[ -f "$HOME/.bash_completion" ]] && export COMPFILE="$HOME/.bash_completion"
-if [[ -f "$COMPFILE" ]] && [[ -r "$COMPFILE" ]]; then
-    # shellcheck source=./.bash_completion
-    . "$COMPFILE"
-fi
+# shellcheck source=./.bash_aliases
+_file_readable "$ALIASFILE" && . "$ALIASFILE"
+
+
+# shellcheck source=./.bash_completion
+_file_readable "$COMPFILE" && . "$COMPFILE"
 
 # =================================================================================================
 
@@ -173,18 +178,21 @@ case ${TERM} in
         ;;
 esac
 
-export HISTSIZE=32500
-
 GPG_TTY="$(tty)"
 export GPG_TTY
 
-gpg-connect-agent updatestartuptty /bye &> /dev/null
+_cmd 'gpg-connect-agent' && gpg-connect-agent updatestartuptty /bye &> /dev/null
 
 # If on TTY1, start Hyprland
 if [[ "$(tty)" == "/dev/tty1" ]] && _cmd 'start-hyprland'; then
-    yn "Start Hyprland?" && exec start-hyprland &> /dev/null || true
+    if _cmd_which 'yn' || _cmd 'yn'; then
+        yn "Start Hyprland?" && exec start-hyprland &> /dev/null || true
+    elif _cmd '_yn'; then
+        _yn "Start Hyprland? " && exec start-hyprland &> /dev/null || true
+    fi
     # set +x
 fi
 
 # set +x
-# vim:ft=bash:ts=4:sts=4:sw=4:et:
+
+# vim: set ft=bash ts=4 sts=4 sw=4 et ai si sta ci pi:
