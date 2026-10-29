@@ -1,8 +1,7 @@
----@type Wezterm
 local wezterm = require("wezterm")
 local config = wezterm.config_builder()
-local mux = wezterm.mux
 local act = wezterm.action
+local plug = wezterm.plugin
 
 ---@param str string
 ---@return string cr_string
@@ -24,8 +23,7 @@ local function is_shell(fg_procc_name)
 end
 
 ---@type weztermConfig
-local wezterm_config_nvim =
-  wezterm.plugin.require("https://github.com/winter-again/wezterm-config.nvim")
+local wezterm_config_nvim = plug.require("https://github.com/winter-again/wezterm-config.nvim")
 
 wezterm.on("user-var-changed", function(window, _, name, value)
   if not wezterm_config_nvim then
@@ -103,13 +101,13 @@ end)
 
 ---Create a default window but makes it maximize on startup
 wezterm.on("gui-startup", function(cmd)
-  local _, _, window = mux.spawn_window(cmd or {})
+  local _, _, window = wezterm.mux.spawn_window(cmd or {})
   window:gui_window():maximize()
 end)
 
 ---Maximize all displayed windows on startup
 wezterm.on("gui-attached", function()
-  for _, window in ipairs(mux.all_windows()) do
+  for _, window in ipairs(wezterm.mux.all_windows()) do
     window:gui_window():maximize()
   end
 end)
@@ -260,17 +258,15 @@ table.insert(config.hyperlink_rules, {
 })
 
 ---@type Log.API
-local log = wezterm.plugin.require("https://github.com/sravioli/log.wz")
+local log = plug.require("https://github.com/sravioli/log.wz")
 log.setup()
 
 ---@type Ribbon.Api
-local ribbon = wezterm.plugin.require("https://github.com/sravioli/ribbon.wz")
-
+local ribbon = plug.require("https://github.com/sravioli/ribbon.wz")
 ribbon.setup()
 
 ---@type Chord
-local chord = wezterm.plugin.require("https://github.com/sravioli/chord.wz")
-
+local chord = plug.require("https://github.com/sravioli/chord.wz")
 chord.setup({
   aliases = {
     CR = "Enter",
@@ -293,7 +289,6 @@ chord.setup({
     include_defaults = false,
   },
 })
-
 chord.maps(config, {
   { "<C-S-c>", act.CopyTo("Clipboard"), "copy" },
   { "<C-S-v>", act.PasteFrom("Clipboard"), "paste" },
