@@ -6,10 +6,11 @@ OPTIONS=":hvD:c:o:a:"
 
 TARGET_DIR="$HOME/Documents"
 OUTPUT="env"
-EXT=".tar.xz"
+EXT=".7z"
 CMD=""
 APPENDED=()
 TARGET_USER="$USER"
+TMP_DIR="$(mktemp -d)"
 
 NEW_METHOD=""
 OVERRIDE_METHOD=0
@@ -42,7 +43,6 @@ TARGETS=(
     "$HOME/.cache/crontab"
     "$HOME/.config/alacritty"
     "$HOME/.config/bat"
-    "$HOME/.config/chadwm"
     "$HOME/.config/fontconfig"
     "$HOME/.config/foot"
     "$HOME/.config/glava"
@@ -56,7 +56,6 @@ TARGETS=(
     "$HOME/.config/nvtop"
     "$HOME/.config/nwg-bar"
     "$HOME/.config/pacman"
-    "$HOME/.config/systemd"
     "$HOME/.config/tridactyl"
     "$HOME/.config/tmux"
     "$HOME/.config/waybar"
@@ -407,6 +406,31 @@ __append_targets() {
     return 0
 }
 
+__move_targets() {
+    local NEW_TMP_DIR
+    NEW_TMP_DIR="$(dirname "${TMP_DIR}")/${OUTPUT}"
+    mv "$TMP_DIR" "${NEW_TMP_DIR}"
+
+    TMP_DIR="${NEW_TMP_DIR}"
+
+    sudo rm -rf "${TMP_DIR}"
+    if [[ $VERBOSE -eq 1 ]]; then
+        mkdir -pv "${TMP_DIR}"
+    else
+        mkdir -p "${TMP_DIR}"
+    fi
+
+    for T in "${TARGETS[@]}"; do
+        if [[ $VERBOSE -eq 1 ]]; then
+            sudo cp -rv "${T}" "${TMP_DIR}"
+        else
+            sudo cp -r "${T}" "${TMP_DIR}"
+        fi
+    done
+
+    sudo chown -R "${USER}:$(id -ng)" "${TMP_DIR}"
+}
+
 if [[ "$UID" == "0" ]] || [[ "$USER" == "root" ]]; then
     die 7 "Refusing to run under root"
 fi
@@ -426,6 +450,7 @@ while getopts "$OPTIONS" OPTION; do
         *) usage 1 ;;
     esac
 done
+shift $((OPTIND - 1))
 
 [[ $OVERRIDE_METHOD -eq 1 ]] && method_select "$NEW_METHOD"
 
@@ -437,19 +462,16 @@ fi
 
 __verify_dir "$TARGET_DIR"
 __filter
+__move_targets
 
 if [[ $VERBOSE -eq 1 ]]; then
     rm -fv "${TARGET_DIR}/${OUTPUT}${EXT}" || die 1 "\`${TARGET_DIR}/${OUTPUT}${EXT}\` couldn't be removed"
-    sudo tar cJvf "${TARGET_DIR}/${OUTPUT}${EXT}" "${TARGETS[@]}" \
-        --group="$TARGET_USER" \
-        --owner="$TARGET_USER" 2> /dev/null \
+    sudo 7z -snl -sdel -mx9 -mmt a "${TARGET_DIR}/${OUTPUT}${EXT}" "${TMP_DIR}" \
         || die 1 "[ERROR] Compression failed"
 
 else
     rm -f "${TARGET_DIR}/${OUTPUT}${EXT}" || die 1 "\`${TARGET_DIR}/${OUTPUT}${EXT}\` couldn't be removed"
-    sudo tar cJf "${TARGET_DIR}/${OUTPUT}${EXT}" "${TARGETS[@]}" \
-        --group="$TARGET_USER" \
-        --owner="$TARGET_USER" 2> /dev/null \
+    sudo 7z -snl -sdel -mx9 -mmt a "${TARGET_DIR}/${OUTPUT}${EXT}" "${TMP_DIR}" &> /dev/null \
         || die 1 "[ERROR] Compression failed"
 
 fi

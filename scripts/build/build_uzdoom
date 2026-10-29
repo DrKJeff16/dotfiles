@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+
+set -o pipefail
+
+OPTIONS=':hc:'
+CONFIGURE_ONLY=0
+TARGET_PFX="${HOME}/.local"
+PKG_CONF="$(which pkg-config)"
+
+export CC='clang' CXX='clang++'
+
+error() {
+    local TXT=("$@")
+    printf "%s\n" "${TXT[@]}" >&2
+    return 0
+}
+
+_clean() {
+    ! [[ -d ./build ]] && return 0
+    rm -rf build
+    return 0
+}
+
+_cmd() {
+    [[ $# -eq 0 ]] && return 127
+
+    while [[ $# -gt 0 ]]; do
+        ! command -v "$1" &> /dev/null && return 1
+        shift
+    done
+
+    return 0
+}
+
+die() {
+    _clean
+
+    local EC=0
+    if [[ $# -gt 0 ]] && [[ $1 =~ ^(0|-?[1-9][0-9]*)$ ]]; then
+        EC="$1"
+        shift
+    fi
+
+    if [[ $# -gt 0 ]]; then
+        local TXT=("$@")
+        if [[ $EC -eq 0 ]]; then
+            printf "%s\n" "${TXT[@]}"
+        else
+            error "${TXT[@]}"
+        fi
+    fi
+
+    exit "${EC}"
+}
+
+usage() {
+    local EC=0
+    [[ "$1" =~ ^(0|-?[1-9][0-9]*)$ ]] && EC="$1"
+
+    local TXT=(
+        "build_uzdoom: A boring neovim build script."
+        ""
+        "  Usage:"
+        "         build_uzdoom [-h] [-c]"
+        ""
+        "     -h                       Prints this help message (exit code: 0)"
+        "     -c                       Only trigger \`configure\` stage"
+        ""
+    )
+
+    die "${EC}" "${TXT[@]}"
+}
+
+_configure() {
+    ! [[ -d ./build ]] && mkdir -p build
+    cmake -B build \
+        -DCMAKE_BUILD_TYPE="RelWithDebInfo" \
+        -DCMAKE_INSTALL_PREFIX="${TARGET_PFX}" \
+        -DCMAKE_C_FLAGS="-march=native" \
+        -DCMAKE_CXX_FLAGS="-march=native" \
+        -DCMAKE_EXPORT_COMPILE_COMMANDS="ON" \
+        -DCMAKE_VERBOSE_MAKEFILE="ON" \
+        -DCMAKE_SOURCE_RPM="ON" \
+        -DCMAKE_SOURCE_ZIP="ON" \
+        -DFORCE_NO_LTO="ON" \
+        -DSEND_ANON_STATS="OFF" \
+        -DSYSTEMINSTALL="ON" \
+        -DPROFILE="ON" \
+        -DVULKAN_USE_WAYLAND="ON" \
+        -DVULKAN_USE_XLIB="OFF" \
+        -DPKG_CONFIG_EXECUTABLE="${PKG_CONF}" \
+        . && return 0
+
+    return 1
+}
+
+_build() {
+    pushd build &> /dev/null || return 1
+
+    make -j"$(nproc)" -l"$(nproc)" || die 1
+    popd &> /dev/null || die 1
+
+    return 0
+}
+
+_install() {
+    pushd build &> /dev/null || return 1
+
+    make -j"$(nproc)" -l"$(nproc)" install || die 1
+    popd &> /dev/null || die 1
+
+    return 0
+}
+
+! _cmd 'cmake' 'make' 'git' && die 127 "Either \`cmake\`, \`make\` or \`git\` not found in PATH"
+! [[ -d ./.git ]] && die 127 "Not in root of repository!"
+
+_cmd 'pkgconf' && PKG_CONF="$(which pkg-config)"
+
+while getopts "$OPTIONS" OPTION; do
+    case "$OPTION" in
+        c) CONFIGURE_ONLY=1 ;;
+        h) usage 0 ;;
+        *) usage 1 ;;
+    esac
+done
+
+_clean
+_configure || die 1
+
+[[ $CONFIGURE_ONLY -eq 1 ]] && die 0
+
+_build || die 1
+_install || die 1
+
+die 0

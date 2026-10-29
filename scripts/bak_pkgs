@@ -86,7 +86,7 @@ __generate_cmds() {
             )
             ;;
 
-        "apt-fast"|"apt-get"|apt)
+        "apt-fast" | "apt-get" | apt)
             MGR_CMD=(
                 "${ELEVATOR} $CMD list --installed 2> /dev/null | cut -d '/' -f1 | tail -n +3 | sort >| $HOME/.packages.list"
             )
@@ -120,6 +120,7 @@ while getopts "$OPTIONS" OPTION; do
         *) usage 1 ;;
     esac
 done
+shift $((OPTIND - 1))
 
 __select_pkg_manager || die 127
 __generate_cmds "$PKG_MANAGER" || die 1

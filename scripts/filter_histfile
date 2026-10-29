@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """Filter bash histfile."""
+
 import sys
 from argparse import ArgumentParser, Namespace
 from io import TextIOWrapper
 from os import environ
 from os.path import expanduser, expandvars, isfile, realpath
 from sys import stderr, stdout
-from typing import Any, Dict, List, TextIO, Tuple
+from typing import Any, TextIO
 
 MAXSIZE: int = int(environ.get("HISTFILESIZE", "32500"))
 VERBOSE: bool = False
@@ -19,26 +19,26 @@ class ArgData:
 
     Parameters
     ----------
-    args : List[str]
+    args : list[str]
         List of options related to this argument (e.g. ``-v``).
-    kwargs : Dict[str, Any]
+    kwargs : dict[str, Any]
         Dictionary of arguments passed to an argument parser option.
 
     Attributes
     ----------
-    args : List[str]
+    args : list[str]
         List of options related to this argument (e.g. ``-v``).
-    kwargs : Dict[str, Any]
+    kwargs : dict[str, Any]
         Dictionary of arguments passed to an argument parser option.
     """
 
-    args: List[str]
-    kwargs: Dict[str, Any]
+    args: list[str]
+    kwargs: dict[str, Any]
 
     def __init__(
         self,
-        args: List[str],
-        kwargs: Dict[str, Any],
+        args: list[str],
+        kwargs: dict[str, Any],
     ):
         self.args = args
         self.kwargs = kwargs
@@ -88,7 +88,7 @@ def die(code: int = 0, *msg, **kwargs) -> None:
     """
     try:
         code = int(code)
-    except Exception:
+    except ValueError:
         code = 1
 
     end: str = kwargs.get("end", "\n")
@@ -103,11 +103,10 @@ def die(code: int = 0, *msg, **kwargs) -> None:
     if flush is not bool:
         flush = False
 
-    if msg:
-        if code != 0:
-            error(*msg, end=end, sep=sep, flush=flush)
-        else:
-            print(*msg, end=end, sep=sep, flush=flush)
+    if msg and code != 0:
+        error(*msg, end=end, sep=sep, flush=flush)
+    elif msg:
+        print(*msg, end=end, sep=sep, flush=flush)
 
     sys.exit(code)
 
@@ -190,8 +189,7 @@ def line_strip(data: str) -> str:
     str
         Stripped line data.
     """
-    return (str(data)
-            if data is not str else data).rstrip("\n").strip(" ").rstrip("/")
+    return (str(data) if data is not str else data).rstrip("\n").strip(" ").rstrip("/")
 
 
 def filter_data(verbose: bool, f: TextIOWrapper) -> str:
@@ -213,21 +211,21 @@ def filter_data(verbose: bool, f: TextIOWrapper) -> str:
     if not f.readable():
         raise IOError("(filter_histfile - filter_data): file not readable!")
 
-    buffer: List[str] = list()
+    buffer: list[str] = []
     data = line_strip(f.readline())
     while data != "":
         buffer.append(data)
         data = line_strip(f.readline())
 
     buffer.reverse()
-    new_buffer: List[str] = list()
+    new_buffer: list[str] = []
 
     # Remove duplicates
     for v in buffer:
         if v not in new_buffer:
             new_buffer.append(v)
 
-    buffer = list()
+    buffer: list[str] = []
     new_buffer.reverse()
     for i, v in enumerate(new_buffer):
         if v[-1] != "\n":
@@ -246,15 +244,15 @@ def filter_data(verbose: bool, f: TextIOWrapper) -> str:
     return res
 
 
-def gen_args(data: List[ArgData]) -> Tuple[ArgumentParser, Namespace]:
+def gen_args(data: list[ArgData]) -> tuple[ArgumentParser, Namespace]:
     """
     Generate argparse arguments from special dict.
 
     Parameters
     ----------
-    args : List[List[str]]
+    args : list[list[str]]
         A list of string lists.
-    opts : List[Dict[str, Any]]
+    opts : list[dict[str, Any]]
         A list of the argument options for the corresponding ``args`` element.
 
     Returns
@@ -268,8 +266,8 @@ def gen_args(data: List[ArgData]) -> Tuple[ArgumentParser, Namespace]:
         raise AssertionError("(filter_histfile - gen_args): Bad arguments!")
 
     parser = ArgumentParser(
-        prog="filter_histfile",
-        description="Filter histfile and get rid of duplicates")
+        prog="filter_histfile", description="Filter histfile and get rid of duplicates"
+    )
     for d in data:
         parser.add_argument(*d.args, **d.kwargs)
 
@@ -279,21 +277,25 @@ def gen_args(data: List[ArgData]) -> Tuple[ArgumentParser, Namespace]:
 def main() -> int:
     """Execute main workflow"""
     code = 0
-    parser_data: List[ArgData] = [
-        ArgData(args=["-v", "--verbose"],
-                kwargs={
-                    "action": "store_true",
-                    "help": "Verbose mode",
-                    "dest": "verbose",
-                    "required": False,
-                }),
-        ArgData(args=["-f", "--file"],
-                kwargs={
-                    "help": "Absolute path to histfile",
-                    "dest": "fpath",
-                    "default": "",
-                    "nargs": 1,
-                }),
+    parser_data: list[ArgData] = [
+        ArgData(
+            args=["-v", "--verbose"],
+            kwargs={
+                "action": "store_true",
+                "help": "Verbose mode",
+                "dest": "verbose",
+                "required": False,
+            },
+        ),
+        ArgData(
+            args=["-f", "--file"],
+            kwargs={
+                "help": "Absolute path to histfile",
+                "dest": "fpath",
+                "default": "",
+                "nargs": 1,
+            },
+        ),
     ]
 
     parser, args = gen_args(parser_data)

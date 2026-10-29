@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """Convert SVG files to PNG."""
+
 import re
 import sys
 from argparse import ArgumentParser, Namespace
@@ -23,7 +23,16 @@ def error(*msg, **kwargs) -> None:
 
 
 def svg_convert(data: str, path: str) -> None:
-    """Convert SVG data to a PNG file."""
+    """
+    Convert SVG data to a PNG file.
+
+    Parameters
+    ----------
+    data : str
+        The raw SVG data to convert.
+    path : str
+        The target file path.
+    """
     parent: str = "/".join(path.split("/")[:-1])
     base: str = basename(path.rstrip("."))
     if not re.compile(".*\\.[Pp][Nn][Gg]$").match(base):
@@ -33,18 +42,21 @@ def svg_convert(data: str, path: str) -> None:
 
 
 def main() -> int:
-    """Execute main workflow."""
+    """
+    Execute main workflow.
+
+    Returns
+    -------
+    int
+        The exit code.
+    """
     parser: ArgumentParser = ArgumentParser(
         "svg2png",
         description="Convert an SVG file to PNG format",
     )
     parser.add_argument("file", nargs="*", metavar="/path/to/input.svg")
     parser.add_argument(
-        "-k",
-        "--keep",
-        action="store_true",
-        dest="keep",
-        required=False
+        "-k", "--keep", action="store_true", dest="keep", required=False
     )
     parser.add_argument(
         "-o",
@@ -52,10 +64,9 @@ def main() -> int:
         default="",
         dest="output",
         metavar="/path/to/output.png",
-        required=False
+        required=False,
     )
     ns: Namespace = parser.parse_args()
-
     keep: bool = ns.keep
     output: str = realpath(expanduser(ns.output)) if ns.output != "" else ""
 
@@ -73,19 +84,15 @@ def main() -> int:
         base: str = ".".join(basename(fpath).split(".")[:-1])
         output = f"{parent}/{base}" if output == "" else output
 
-        file = open(fpath, "r")
-        data: str = "".join(file.read().split("\n"))
-        file.close()
+        with open(fpath, "r") as file:
+            data: str = "".join(file.read().split("\n"))
     elif not sys.stdin.isatty():
         file = sys.stdin
-        data: str = file.read()
+        with open(fpath, "r") as file:
+            data: str = file.read()
     else:
-        try:
-            print(sys.argv[1])
-            data: str = sys.argv[1]
-        except IndexError:
-            message = 'need filename as first argument if stdin is not full'
-            raise IndexError(message)
+        print(sys.argv[1])
+        data: str = sys.argv[1]
 
     svg_convert(data, output)
 

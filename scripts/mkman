@@ -10,22 +10,20 @@ _cmd() {
 }
 
 ELEVATOR=""
-CMD=""
-
 if _cmd 'sudo'; then
     ELEVATOR="sudo"
 elif _cmd 'doas'; then
     ELEVATOR="doas"
 fi
 
+CMD=""
 if _cmd 'mandb'; then
     CMD="mandb"
 elif _cmd 'mandoc'; then
     CMD="makewhatis -Q -T utf8"
 fi
 
-if [[ "${CMD}" != "" ]]; then
-    eval "${ELEVATOR} ${CMD}"
-    exit $?
-fi
-exit 1
+[[ "${CMD}" == "" ]] && exit 1
+
+eval "${ELEVATOR} ${CMD}"
+exit $?
